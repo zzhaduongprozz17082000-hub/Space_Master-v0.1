@@ -6,16 +6,14 @@ import "firebase/compat/storage";
 
 // TODO: Replace the following with your app's Firebase project configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyBuCEPU5fdqn4gPeEOVbA_SbHFxCangJb4",
-  authDomain: "space-master-12faa.firebaseapp.com",
-  projectId: "space-master-12faa",
-  storageBucket: "space-master-12faa.firebasestorage.app",
-  messagingSenderId: "110214399515",
-  appId: "1:110214399515:web:cd337fb7a9a75ae6e85abe",
-  measurementId: "G-6HFY8FNX6M"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+  appId: "YOUR_APP_ID",
+  measurementId: "YOUR_MEASUREMENT_ID" // optional
 };
 
 // Initialize Firebase
