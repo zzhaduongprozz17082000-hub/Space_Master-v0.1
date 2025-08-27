@@ -1,17 +1,19 @@
 // FIX: Updated to use Firebase v8 syntax to resolve module export errors.
-import firebase from "firebase/app";
+import firebase from "firebase/compat/app";
 import "firebase/auth";
 
 // TODO: Replace the following with your app's Firebase project configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-  authDomain: "your-project-id.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-project-id.appspot.com",
-  messagingSenderId: "your-sender-id",
-  appId: "1:your-sender-id:web:your-app-id",
-  measurementId: "G-XXXXXXXXXX"
+  apiKey: "AIzaSyBuCEPU5fdqn4gPeEOVbA_SbHFxCangJb4",
+  authDomain: "space-master-12faa.firebaseapp.com",
+  projectId: "space-master-12faa",
+  storageBucket: "space-master-12faa.firebasestorage.app",
+  messagingSenderId: "110214399515",
+  appId: "1:110214399515:web:cd337fb7a9a75ae6e85abe",
+  measurementId: "G-6HFY8FNX6M"
 };
 
 // Initialize Firebase

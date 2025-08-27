@@ -1,6 +1,6 @@
 import React from 'react';
-// FIX: Import firebase v8 compatibility module.
-import firebase from 'firebase/app';
+// FIX: Import firebase v9 compatibility module.
+import firebase from 'firebase/compat/app';
 import { Sidebar } from '../components/Sidebar';
 import { Header } from '../components/Header';
 import { MainContent } from '../components/MainContent';

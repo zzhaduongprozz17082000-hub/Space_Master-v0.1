@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-// FIX: Import firebase v8 compatibility module.
-import firebase from 'firebase/app';
+// FIX: Import firebase v9 compatibility module.
+import firebase from 'firebase/compat/app';
 import { auth } from './firebase/config';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';

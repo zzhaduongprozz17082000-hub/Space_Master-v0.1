@@ -1,6 +1,6 @@
 import React from 'react';
-// FIX: Import firebase v8 compatibility module.
-import firebase from 'firebase/app';
+// FIX: Import firebase v9 compatibility module.
+import firebase from 'firebase/compat/app';
 import { SearchIcon } from '../assets/icons';
 import { auth } from '../firebase/config';
 

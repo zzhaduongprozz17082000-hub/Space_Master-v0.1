@@ -1,7 +1,7 @@
 import React from 'react';
-// FIX: Import firebase v8 compatibility modules.
-import firebase from 'firebase/app';
-import 'firebase/auth';
+// FIX: Import firebase v9 compatibility modules.
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
 import { auth } from '../firebase/config';
 import { RocketIcon, GoogleIcon } from '../assets/icons';
 
