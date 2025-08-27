@@ -5,13 +5,14 @@ interface FileItemProps {
   type: 'folder' | 'file';
   name: string;
   downloadURL?: string;
+  onClick?: () => void;
 }
 
-export const FileItem = ({ type, name, downloadURL }: FileItemProps) => {
+export const FileItem = ({ type, name, downloadURL, onClick }: FileItemProps) => {
   const icon = type === 'folder' ? <FolderIcon /> : <FileIcon />;
 
   const content = (
-    <div className="file-item">
+    <div className="file-item" onClick={type === 'folder' ? onClick : undefined}>
       <div className="file-item-icon">{icon}</div>
       <div className="file-item-name">{name}</div>
     </div>
