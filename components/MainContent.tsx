@@ -13,8 +13,9 @@ export const MainContent = () => (
             </button>
         </div>
         <div className="file-grid">
-            {files.map(({ id, ...rest }) => (
-                <FileItem key={id} {...rest} />
+            {/* FIX: Destructure and pass props explicitly to avoid a TypeScript error where the 'key' prop interferes with spread props type checking. */}
+            {files.map(({ id, type, name }) => (
+                <FileItem key={id} type={type} name={name} />
             ))}
         </div>
     </main>

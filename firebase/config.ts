@@ -1,6 +1,6 @@
 // FIX: Updated to use Firebase v8 syntax to resolve module export errors.
 import firebase from "firebase/compat/app";
-import "firebase/auth";
+import "firebase/compat/auth";
 
 // TODO: Replace the following with your app's Firebase project configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
