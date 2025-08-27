@@ -221,36 +221,24 @@ export const MainContent = ({ user }: MainContentProps) => {
                 {/* FIX: Refactored to use if/else for better type inference and to fix TS error. */}
                 {allItems.map((item) => {
                     if (item.type === 'folder') {
-                        // FIX: Wrap FileItem in React.Fragment and move the key to it to resolve TS error.
-                        // The error "Property 'key' does not exist on type 'FileItemProps'" suggests a
-                        // toolchain issue where 'key' is not being treated as a special React prop.
-                        // Moving the key to a wrapping Fragment satisfies React's requirement for keys in a list
-                        // while avoiding passing 'key' as a prop to FileItem.
                         return (
-                            <React.Fragment key={item.id}>
-                                <FileItem
-                                    type={item.type}
-                                    name={item.name}
-                                    onClick={() => handleFolderClick(item)}
-                                    onShareClick={() => handleShareClick(item)}
-                                />
-                            </React.Fragment>
+                            <FileItem
+                                key={item.id}
+                                type={item.type}
+                                name={item.name}
+                                onClick={() => handleFolderClick(item)}
+                                onShareClick={() => handleShareClick(item)}
+                            />
                         );
                     } else {
-                        // FIX: Wrap FileItem in React.Fragment and move the key to it to resolve TS error.
-                        // The error "Property 'key' does not exist on type 'FileItemProps'" suggests a
-                        // toolchain issue where 'key' is not being treated as a special React prop.
-                        // Moving the key to a wrapping Fragment satisfies React's requirement for keys in a list
-                        // while avoiding passing 'key' as a prop to FileItem.
                         return (
-                            <React.Fragment key={item.id}>
-                                <FileItem
-                                    type={item.type}
-                                    name={item.name}
-                                    downloadURL={item.downloadURL}
-                                    onShareClick={() => handleShareClick(item)}
-                                />
-                            </React.Fragment>
+                            <FileItem
+                                key={item.id}
+                                type={item.type}
+                                name={item.name}
+                                downloadURL={item.downloadURL}
+                                onShareClick={() => handleShareClick(item)}
+                            />
                         );
                     }
                 })}
@@ -267,7 +255,6 @@ export const MainContent = ({ user }: MainContentProps) => {
                     isOpen={isShareModalOpen}
                     onClose={() => setIsShareModalOpen(false)}
                     item={sharingItem}
-                    user={user}
                 />
             )}
         </main>

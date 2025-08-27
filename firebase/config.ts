@@ -6,6 +6,8 @@ import "firebase/compat/storage";
 
 // TODO: Replace the following with your app's Firebase project configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBuCEPU5fdqn4gPeEOVbA_SbHFxCangJb4",
   authDomain: "space-master-12faa.firebaseapp.com",
