@@ -16,7 +16,7 @@ export const DashboardPage = ({ user }: DashboardPageProps) => {
         <Sidebar />
         <div className="main-wrapper">
             <Header user={user} />
-            <MainContent />
+            <MainContent user={user} />
         </div>
     </div>
   );

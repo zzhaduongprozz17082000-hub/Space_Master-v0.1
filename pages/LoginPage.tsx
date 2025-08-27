@@ -4,16 +4,13 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import { auth } from '../firebase/config';
 import { RocketIcon, GoogleIcon } from '../assets/icons';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 
 export const LoginPage = () => {
 
     const handleGoogleSignIn = async () => {
-        // FIX: Use new firebase.auth.GoogleAuthProvider() for Firebase v8 compatibility.
         const provider = new firebase.auth.GoogleAuthProvider();
         try {
-            // FIX: Use auth.signInWithPopup(provider) for Firebase v8 compatibility.
-            await signInWithPopup(auth, new GoogleAuthProvider());
+            await auth.signInWithPopup(provider);
         } catch (error) {
             console.error("Authentication error: ", error);
         }

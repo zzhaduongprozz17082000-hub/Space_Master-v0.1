@@ -1,6 +1,7 @@
 // FIX: Updated to use Firebase v8 syntax to resolve module export errors.
 import firebase from "firebase/compat/app";
 import "firebase/compat/auth";
+import "firebase/compat/firestore";
 
 // TODO: Replace the following with your app's Firebase project configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -25,3 +26,4 @@ if (!firebase.apps.length) {
 // Initialize Firebase Authentication and get a reference to the service
 // FIX: Get auth instance using the v8 namespaced API.
 export const auth = firebase.auth();
+export const firestore = firebase.firestore();

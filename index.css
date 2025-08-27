@@ -7,6 +7,7 @@
   --accent-primary: #58a6ff;
   --accent-hover: #1f6feb;
   --font-family: 'Roboto', sans-serif;
+  --danger-color: #f85149;
 }
 
 * {
@@ -177,8 +178,12 @@ body {
     font-weight: 500;
 }
 
-.upload-btn {
-  background-color: var(--accent-primary);
+.header-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.action-btn {
   color: white;
   border: none;
   padding: 0.6rem 1.2rem;
@@ -192,9 +197,22 @@ body {
   gap: 0.5rem;
 }
 
-.upload-btn:hover {
-  background-color: var(--accent-hover);
+.action-btn.primary {
+    background-color: var(--accent-primary);
 }
+.action-btn.primary:hover {
+    background-color: var(--accent-hover);
+}
+
+.action-btn.secondary {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+.action-btn.secondary:hover {
+    background-color: var(--background-light);
+}
+
 
 .file-grid {
   display: grid;
@@ -310,4 +328,85 @@ body {
     justify-content: center;
     align-items: center;
     font-size: 1.5rem;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: var(--background-light);
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-content h2 {
+  margin-bottom: 1.5rem;
+  font-weight: 500;
+}
+
+.modal-form .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.modal-form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.modal-form input {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-dark);
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.modal-actions .btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.modal-actions .btn-primary {
+  background-color: var(--accent-primary);
+  color: white;
+}
+.modal-actions .btn-primary:hover {
+  background-color: var(--accent-hover);
+}
+.modal-actions .btn-secondary {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+.modal-actions .btn-secondary:hover {
+    background-color: #484f58;
 }

@@ -16,6 +16,11 @@ export const UploadIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/></svg>
 );
 
+export const NewFolderIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 1.5A.5.5 0 0 1 1 1h5.5L8 3H15a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V2a.5.5 0 0 1 .5-.5zm5.12 1L5.5 3H1v9h14V4H8.88l-1.26-1z"/><path d="M8 8.5a.5.5 0 0 1 .5.5v1h1a.5.5 0 0 1 0 1H8.5v1a.5.5 0 0 1-1 0v-1H6a.5.5 0 0 1 0-1h1.5v-1a.5.5 0 0 1 .5-.5z"/></svg>
+);
+
+
 export const MyFilesIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
 );

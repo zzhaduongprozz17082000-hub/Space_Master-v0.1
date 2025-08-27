@@ -1,8 +1,10 @@
 import React from 'react';
 import { FolderIcon, FileIcon } from '../assets/icons';
-import { FileData } from '../data/mockData';
 
-type FileItemProps = Omit<FileData, 'id'>;
+interface FileItemProps {
+  type: 'folder' | 'file';
+  name: string;
+}
 
 export const FileItem = ({ type, name }: FileItemProps) => {
   const icon = type === 'folder' ? <FolderIcon /> : <FileIcon />;
