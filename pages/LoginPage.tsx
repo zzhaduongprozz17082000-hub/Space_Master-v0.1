@@ -2,7 +2,7 @@ import React from 'react';
 // FIX: Import firebase v9 compatibility modules.
 import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
-import { auth } from '../firebase/config';
+import { auth, firestore } from '../firebase/config';
 import { RocketIcon, GoogleIcon } from '../assets/icons';
 
 export const LoginPage = () => {
@@ -10,7 +10,17 @@ export const LoginPage = () => {
     const handleGoogleSignIn = async () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         try {
-            await auth.signInWithPopup(provider);
+            const result = await auth.signInWithPopup(provider);
+            if (result.user) {
+                // Create or update user document in Firestore
+                const userRef = firestore.collection('users').doc(result.user.uid);
+                await userRef.set({
+                    uid: result.user.uid,
+                    email: result.user.email,
+                    displayName: result.user.displayName,
+                    photoURL: result.user.photoURL,
+                }, { merge: true }); // Use merge to avoid overwriting existing data
+            }
         } catch (error) {
             console.error("Authentication error: ", error);
         }

@@ -226,6 +226,10 @@ body {
   gap: 1.5rem;
 }
 
+.file-item-wrapper {
+    position: relative;
+}
+
 .file-item {
   background-color: var(--background-light);
   border: 1px solid var(--border-color);
@@ -238,9 +242,10 @@ body {
   text-align: center;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  height: 100%;
 }
 
-.file-item:hover {
+.file-item-wrapper:hover .file-item {
   transform: translateY(-5px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.2);
   border-color: var(--accent-primary);
@@ -260,6 +265,39 @@ body {
     font-size: 0.9rem;
     font-weight: 500;
     word-break: break-word;
+}
+
+.share-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--background-dark);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, background-color 0.2s;
+    z-index: 10;
+}
+
+.file-item-wrapper:hover .share-btn {
+    opacity: 1;
+}
+
+.share-btn:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.share-btn svg {
+    width: 16px;
+    height: 16px;
 }
 
 a.file-item-link,
@@ -382,7 +420,7 @@ a.file-item-link:visited {
   font-size: 0.9rem;
 }
 
-.modal-form input {
+.modal-form input, .modal-form select {
   width: 100%;
   padding: 0.75rem;
   border-radius: 6px;
@@ -390,6 +428,20 @@ a.file-item-link:visited {
   background-color: var(--background-dark);
   color: var(--text-primary);
   font-size: 1rem;
+}
+
+.share-form-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.share-form-row > .form-group {
+    flex-grow: 1;
+}
+
+.share-form-row > .form-group.permission-group {
+    flex-grow: 0;
+    min-width: 120px;
 }
 
 .modal-actions {
@@ -447,4 +499,7 @@ a.file-item-link:visited {
   color: var(--text-primary);
   font-weight: 500;
   pointer-events: none;
+}
+.breadcrumb-separator {
+    margin: 0 0.25rem;
 }

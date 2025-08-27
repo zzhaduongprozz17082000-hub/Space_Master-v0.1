@@ -4,30 +4,36 @@ import { firestore, storage } from '../firebase/config';
 import { UploadIcon, NewFolderIcon } from '../assets/icons';
 import { FileItem } from './FileItem';
 import { NewFolderModal } from './NewFolderModal';
+import { ShareModal } from './ShareModal';
+
 
 interface MainContentProps {
     user: firebase.User;
 }
 
 // Define types for folder and file
-interface Folder {
+export interface Folder {
     id: string;
     name: string;
     type: 'folder';
     createdAt: firebase.firestore.Timestamp;
     parentId: string | null;
+    ownerId: string;
+    sharedWith?: { [key: string]: 'viewer' | 'editor' };
 }
 
-interface File {
+export interface File {
     id: string;
     name: string;
     type: 'file';
     createdAt: firebase.firestore.Timestamp;
     downloadURL: string;
     parentId: string | null;
+    ownerId: string;
+    sharedWith?: { [key: string]: 'viewer' | 'editor' };
 }
 
-type Item = Folder | File;
+export type Item = Folder | File;
 
 interface PathSegment {
     id: string | null;
@@ -36,57 +42,67 @@ interface PathSegment {
 
 export const MainContent = ({ user }: MainContentProps) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [folders, setFolders] = useState<Folder[]>([]);
-    const [files, setFiles] = useState<File[]>([]);
+    const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+    const [sharingItem, setSharingItem] = useState<Item | null>(null);
+    const [ownedFolders, setOwnedFolders] = useState<Folder[]>([]);
+    const [sharedFolders, setSharedFolders] = useState<Folder[]>([]);
+    const [ownedFiles, setOwnedFiles] = useState<File[]>([]);
+    const [sharedFiles, setSharedFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [path, setPath] = useState<PathSegment[]>([{ id: null, name: 'My Files' }]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Fetch folders and files based on currentFolderId
     useEffect(() => {
         if (!user) return;
-
-        // Base query for user's items in the current folder
-        const baseQuery = (collection: string) => firestore.collection(collection)
+    
+        // 1. Query for items owned by the user
+        const ownerQuery = (collection: string) => firestore.collection(collection)
             .where('ownerId', '==', user.uid)
-            .where('parentId', '==', currentFolderId)
-            .orderBy('createdAt', 'desc');
-
-        // Fetch folders
-        const folderUnsubscribe = baseQuery('folders').onSnapshot(snapshot => {
-            const fetchedFolders = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            })) as Folder[];
-            setFolders(fetchedFolders);
+            .where('parentId', '==', currentFolderId);
+    
+        // 2. Query for items shared with the user
+        const sharedQuery = (collection: string) => firestore.collection(collection)
+            .where(`sharedWith.${user.uid}`, 'in', ['viewer', 'editor'])
+            .where('parentId', '==', currentFolderId);
+    
+        const unsubOwnedFolders = ownerQuery('folders').onSnapshot(snap => {
+            setOwnedFolders(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Folder[]);
         });
-            
-        // Fetch files
-        const fileUnsubscribe = baseQuery('files').onSnapshot(snapshot => {
-            const fetchedFiles = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-            })) as File[];
-            setFiles(fetchedFiles);
+        const unsubSharedFolders = sharedQuery('folders').onSnapshot(snap => {
+            setSharedFolders(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Folder[]);
         });
-
+        const unsubOwnedFiles = ownerQuery('files').onSnapshot(snap => {
+            setOwnedFiles(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as File[]);
+        });
+        const unsubSharedFiles = sharedQuery('files').onSnapshot(snap => {
+            setSharedFiles(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as File[]);
+        });
+    
         return () => {
-            folderUnsubscribe();
-            fileUnsubscribe();
+            unsubOwnedFolders();
+            unsubSharedFolders();
+            unsubOwnedFiles();
+            unsubSharedFiles();
         };
     }, [user, currentFolderId]);
 
     // Combine and sort folders and files
     const allItems = useMemo(() => {
-        const items: Item[] = [...folders, ...files];
-        return items.sort((a, b) => {
+        const all = [
+            ...ownedFolders, ...sharedFolders,
+            ...ownedFiles, ...sharedFiles
+        ];
+        // Remove duplicates (in case an item is owned and shared, though unlikely)
+        const uniqueItems = Array.from(new Map(all.map(item => [item.id, item])).values());
+
+        return uniqueItems.sort((a, b) => {
             if (a.type === 'folder' && b.type === 'file') return -1;
             if (a.type === 'file' && b.type === 'folder') return 1;
             if (!a.createdAt || !b.createdAt) return 0;
             return b.createdAt.toMillis() - a.createdAt.toMillis()
         });
-    }, [folders, files]);
+    }, [ownedFolders, sharedFolders, ownedFiles, sharedFiles]);
 
     const handleFolderClick = (folder: Folder) => {
         setCurrentFolderId(folder.id);
@@ -107,7 +123,8 @@ export const MainContent = ({ user }: MainContentProps) => {
                 ownerId: user.uid,
                 parentId: currentFolderId,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                type: 'folder'
+                type: 'folder',
+                sharedWith: {},
             });
             setIsModalOpen(false);
         } catch (error) {
@@ -140,6 +157,7 @@ export const MainContent = ({ user }: MainContentProps) => {
                 downloadURL,
                 storagePath,
                 size: file.size,
+                sharedWith: {},
             });
 
         } catch (error) {
@@ -150,6 +168,11 @@ export const MainContent = ({ user }: MainContentProps) => {
                 fileInputRef.current.value = '';
             }
         }
+    };
+
+    const handleShareClick = (item: Item) => {
+        setSharingItem(item);
+        setIsShareModalOpen(true);
     };
 
     const currentFolderName = path[path.length - 1]?.name || 'My Files';
@@ -195,21 +218,43 @@ export const MainContent = ({ user }: MainContentProps) => {
             </nav>
 
             <div className="file-grid">
-                {allItems.map((item) => (
-                    <FileItem 
-                        key={item.id} 
-                        type={item.type} 
-                        name={item.name} 
-                        onClick={item.type === 'folder' ? () => handleFolderClick(item as Folder) : undefined}
-                        downloadURL={item.type === 'file' ? (item as File).downloadURL : undefined}
-                    />
-                ))}
+                {/* FIX: Refactored to use if/else for better type inference and to fix TS error. */}
+                {allItems.map((item) => {
+                    if (item.type === 'folder') {
+                        return (
+                            <FileItem
+                                key={item.id}
+                                type={item.type}
+                                name={item.name}
+                                onClick={() => handleFolderClick(item)}
+                                onShareClick={() => handleShareClick(item)}
+                            />
+                        );
+                    } else {
+                        return (
+                            <FileItem
+                                key={item.id}
+                                type={item.type}
+                                name={item.name}
+                                downloadURL={item.downloadURL}
+                                onShareClick={() => handleShareClick(item)}
+                            />
+                        );
+                    }
+                })}
             </div>
             {isModalOpen && (
                 <NewFolderModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                     onCreate={handleCreateFolder}
+                />
+            )}
+            {isShareModalOpen && sharingItem && (
+                 <ShareModal
+                    isOpen={isShareModalOpen}
+                    onClose={() => setIsShareModalOpen(false)}
+                    item={sharingItem}
                 />
             )}
         </main>
