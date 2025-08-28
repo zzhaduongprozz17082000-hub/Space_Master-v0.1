@@ -1,19 +1,15 @@
 import React from 'react';
-// FIX: Import firebase v9 compatibility module.
-import firebase from 'firebase/compat/app';
 import { SearchIcon } from '../assets/icons';
-import { auth } from '../firebase/config';
+import { auth, FirebaseUser } from '../firebase/config';
 
 interface HeaderProps {
-    // FIX: Update User type to firebase.User for v8 compatibility.
-    user: firebase.User;
+    user: FirebaseUser;
 }
 
 export const Header = ({ user }: HeaderProps) => {
 
     const handleSignOut = async () => {
         try {
-            // FIX: Use auth.signOut() for Firebase v8 compatibility.
             await auth.signOut();
         } catch (error) {
             console.error("Error signing out: ", error);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { firestore } from '../../firebase/config';
+import { functions } from '../../firebase/config';
 import { StatCard } from '../../components/admin/StatCard';
-import { DashboardIcon, FileIcon, FolderIcon, UsersIcon, StorageIcon } from '../../assets/icons';
+import { FileIcon, FolderIcon, UsersIcon, StorageIcon } from '../../assets/icons';
 
 interface Stats {
     userCount: number;
@@ -27,27 +27,17 @@ export const AdminDashboardPage = () => {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const usersPromise = firestore.collection('users').get();
-                const filesPromise = firestore.collection('files').get();
-                const foldersPromise = firestore.collection('folders').get();
-
-                const [usersSnap, filesSnap, foldersSnap] = await Promise.all([
-                    usersPromise,
-                    filesPromise,
-                    foldersPromise,
-                ]);
-
-                const totalStorage = filesSnap.docs.reduce((sum, doc) => sum + (doc.data().size || 0), 0);
-
-                setStats({
-                    userCount: usersSnap.size,
-                    fileCount: filesSnap.size,
-                    folderCount: foldersSnap.size,
-                    totalStorage,
-                });
+                // Get a reference to the callable function
+                const getAdminStats = functions.httpsCallable('getAdminStats');
+                
+                // Call the function and await the result
+                const result = await getAdminStats();
+                const data = result.data as Stats;
+                
+                setStats(data);
             } catch (err) {
                 console.error("Error fetching admin stats:", err);
-                setError('Failed to load dashboard statistics.');
+                setError('Failed to load dashboard statistics. Ensure you have admin privileges and the backend function is deployed.');
             } finally {
                 setLoading(false);
             }

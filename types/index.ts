@@ -1,4 +1,4 @@
-import firebase from 'firebase/compat/app';
+import { Timestamp } from '../firebase/config';
 
 export interface User {
     uid: string;
@@ -12,7 +12,7 @@ export interface Folder {
     id: string;
     name: string;
     type: 'folder';
-    createdAt: firebase.firestore.Timestamp;
+    createdAt: Timestamp;
     parentId: string | null;
     ownerId: string;
     sharedWith?: { [key: string]: 'viewer' | 'editor' };
@@ -22,7 +22,7 @@ export interface File {
     id: string;
     name: string;
     type: 'file';
-    createdAt: firebase.firestore.Timestamp;
+    createdAt: Timestamp;
     downloadURL: string;
     parentId: string | null;
     ownerId: string;

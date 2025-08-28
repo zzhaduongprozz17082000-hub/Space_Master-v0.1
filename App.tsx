@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import firebase from 'firebase/compat/app';
-import { auth, firestore } from './firebase/config';
+import { auth, firestore, FirebaseUser } from './firebase/config';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
 import { ShareAccessPage } from './pages/ShareAccessPage';
@@ -8,7 +7,7 @@ import { AdminLayout } from './layouts/AdminLayout';
 import { User } from './types';
 
 export const App = () => {
-  const [userAuth, setUserAuth] = useState<firebase.User | null>(null);
+  const [userAuth, setUserAuth] = useState<FirebaseUser | null>(null);
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 

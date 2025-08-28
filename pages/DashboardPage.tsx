@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-// FIX: Import firebase v9 compatibility module.
-import firebase from 'firebase/compat/app';
 import { Sidebar } from '../components/Sidebar';
 import { Header } from '../components/Header';
 import { MainContent } from '../components/MainContent';
+import { FirebaseUser } from '../firebase/config';
 
 interface DashboardPageProps {
-  // FIX: Update User type to firebase.User for v8 compatibility.
-  user: firebase.User;
+  user: FirebaseUser;
 }
 
 export type ViewType = 'my-files' | 'shared-with-me';

@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import firebase from 'firebase/compat/app';
-import { firestore } from '../firebase/config';
+import { firestore, FirebaseUser } from '../firebase/config';
 import { Item, File as FileType } from '../types';
 import { FileIcon, FolderIcon, UploadIcon } from '../assets/icons';
 
 interface ShareAccessPageProps {
-    user: firebase.User;
+    user: FirebaseUser;
     itemId: string;
 }
 

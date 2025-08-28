@@ -1,14 +1,11 @@
 import React from 'react';
-// FIX: Import firebase v9 compatibility modules.
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
-import { auth, firestore } from '../firebase/config';
+import { auth, firestore, GoogleAuthProvider } from '../firebase/config';
 import { RocketIcon, GoogleIcon } from '../assets/icons';
 
 export const LoginPage = () => {
 
     const handleGoogleSignIn = async () => {
-        const provider = new firebase.auth.GoogleAuthProvider();
+        const provider = new GoogleAuthProvider();
         try {
             const result = await auth.signInWithPopup(provider);
             if (result.user) {

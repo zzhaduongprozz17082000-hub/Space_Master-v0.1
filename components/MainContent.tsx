@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import firebase from 'firebase/compat/app';
-import { firestore, storage } from '../firebase/config';
+import { firestore, storage, serverTimestamp, FirebaseUser } from '../firebase/config';
 import { UploadIcon, NewFolderIcon, FolderUploadIcon } from '../assets/icons';
 import { FileItem } from './FileItem';
 import { NewFolderModal } from './NewFolderModal';
@@ -9,7 +8,7 @@ import { Item, Folder, File } from '../types';
 
 
 interface MainContentProps {
-    user: firebase.User;
+    user: FirebaseUser;
     activeView: 'my-files' | 'shared-with-me';
     initialFolderId: string | null;
 }
@@ -160,7 +159,7 @@ export const MainContent = ({ user, activeView, initialFolderId }: MainContentPr
                 name: folderName.trim(),
                 ownerId: user.uid,
                 parentId: currentFolderId,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                createdAt: serverTimestamp(),
                 type: 'folder',
                 sharedWith: parentSharedWith,
             });
@@ -203,7 +202,7 @@ export const MainContent = ({ user, activeView, initialFolderId }: MainContentPr
                     name: file.name,
                     ownerId: user.uid,
                     parentId: currentFolderId,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdAt: serverTimestamp(),
                     type: 'file',
                     downloadURL,
                     storagePath,
@@ -290,7 +289,7 @@ export const MainContent = ({ user, activeView, initialFolderId }: MainContentPr
                             name: segment,
                             ownerId: user.uid,
                             parentId: parentId,
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            createdAt: serverTimestamp(),
                             type: 'folder',
                             sharedWith: parentSharedWith,
                         });
@@ -320,7 +319,7 @@ export const MainContent = ({ user, activeView, initialFolderId }: MainContentPr
                     name: file.name,
                     ownerId: user.uid,
                     parentId: fileParentId,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    createdAt: serverTimestamp(),
                     type: 'file',
                     downloadURL,
                     storagePath,

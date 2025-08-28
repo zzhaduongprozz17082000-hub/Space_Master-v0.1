@@ -92,7 +92,6 @@ export const ShareModal = ({ isOpen, onClose, item }: ShareModalProps) => {
                 await batch.commit();
             } else {
                 // It's a single file, just update the one document
-                // FIX: Simplified collection name since `item.type` is known to be 'file' here, resolving the TS error.
                 const docRef = firestore.collection('files').doc(item.id);
                 await docRef.update({
                     [`sharedWith.${userToShareWith.uid}`]: permission,

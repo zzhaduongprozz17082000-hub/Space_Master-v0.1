@@ -1,12 +1,12 @@
 import React from 'react';
-import firebase from 'firebase/compat/app';
 import { AdminSidebar } from '../components/admin/AdminSidebar';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { UserManagementPage } from '../pages/admin/UserManagementPage';
 import { Header } from '../components/Header';
+import { FirebaseUser } from '../firebase/config';
 
 interface AdminLayoutProps {
-    user: firebase.User;
+    user: FirebaseUser;
 }
 
 export const AdminLayout = ({ user }: AdminLayoutProps) => {
