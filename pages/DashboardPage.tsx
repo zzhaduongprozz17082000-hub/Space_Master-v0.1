@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 // FIX: Import firebase v9 compatibility module.
 import firebase from 'firebase/compat/app';
 import { Sidebar } from '../components/Sidebar';
@@ -10,13 +10,17 @@ interface DashboardPageProps {
   user: firebase.User;
 }
 
+export type ViewType = 'my-files' | 'shared-with-me';
+
 export const DashboardPage = ({ user }: DashboardPageProps) => {
+  const [activeView, setActiveView] = useState<ViewType>('my-files');
+
   return (
     <div className="app-container">
-        <Sidebar />
+        <Sidebar activeView={activeView} onViewChange={setActiveView} />
         <div className="main-wrapper">
             <Header user={user} />
-            <MainContent user={user} />
+            <MainContent user={user} activeView={activeView} />
         </div>
     </div>
   );

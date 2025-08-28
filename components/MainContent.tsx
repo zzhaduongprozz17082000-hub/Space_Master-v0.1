@@ -9,6 +9,7 @@ import { ShareModal } from './ShareModal';
 
 interface MainContentProps {
     user: firebase.User;
+    activeView: 'my-files' | 'shared-with-me';
 }
 
 // Define types for folder and file
@@ -40,7 +41,7 @@ interface PathSegment {
     name: string;
 }
 
-export const MainContent = ({ user }: MainContentProps) => {
+export const MainContent = ({ user, activeView }: MainContentProps) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [sharingItem, setSharingItem] = useState<Item | null>(null);
@@ -54,38 +55,48 @@ export const MainContent = ({ user }: MainContentProps) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
+        const rootName = activeView === 'my-files' ? 'My Files' : 'Shared with me';
+        setPath([{ id: null, name: rootName }]);
+        setCurrentFolderId(null);
+    }, [activeView]);
+
+    useEffect(() => {
         if (!user) return;
     
-        // 1. Query for items owned by the user
-        const ownerQuery = (collection: string) => firestore.collection(collection)
-            .where('ownerId', '==', user.uid)
-            .where('parentId', '==', currentFolderId);
-    
-        // 2. Query for items shared with the user
-        const sharedQuery = (collection: string) => firestore.collection(collection)
-            .where(`sharedWith.${user.uid}`, 'in', ['viewer', 'editor'])
-            .where('parentId', '==', currentFolderId);
-    
-        const unsubOwnedFolders = ownerQuery('folders').onSnapshot(snap => {
-            setOwnedFolders(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Folder[]);
-        });
-        const unsubSharedFolders = sharedQuery('folders').onSnapshot(snap => {
-            setSharedFolders(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Folder[]);
-        });
-        const unsubOwnedFiles = ownerQuery('files').onSnapshot(snap => {
-            setOwnedFiles(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as File[]);
-        });
-        const unsubSharedFiles = sharedQuery('files').onSnapshot(snap => {
-            setSharedFiles(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as File[]);
-        });
+        const subscriptions: (() => void)[] = [];
+
+        if (activeView === 'my-files') {
+            const ownerQuery = (collection: string) => firestore.collection(collection)
+                .where('ownerId', '==', user.uid)
+                .where('parentId', '==', currentFolderId);
+
+            subscriptions.push(ownerQuery('folders').onSnapshot(snap => {
+                setOwnedFolders(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Folder[]);
+            }));
+            subscriptions.push(ownerQuery('files').onSnapshot(snap => {
+                setOwnedFiles(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as File[]);
+            }));
+            setSharedFolders([]);
+            setSharedFiles([]);
+        } else { // 'shared-with-me'
+            const sharedQuery = (collection: string) => firestore.collection(collection)
+                .where(`sharedWith.${user.uid}`, 'in', ['viewer', 'editor'])
+                .where('parentId', '==', currentFolderId);
+            
+            subscriptions.push(sharedQuery('folders').onSnapshot(snap => {
+                setSharedFolders(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Folder[]);
+            }));
+            subscriptions.push(sharedQuery('files').onSnapshot(snap => {
+                setSharedFiles(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as File[]);
+            }));
+            setOwnedFolders([]);
+            setOwnedFiles([]);
+        }
     
         return () => {
-            unsubOwnedFolders();
-            unsubSharedFolders();
-            unsubOwnedFiles();
-            unsubSharedFiles();
+            subscriptions.forEach(unsub => unsub());
         };
-    }, [user, currentFolderId]);
+    }, [user, currentFolderId, activeView]);
 
     // Combine and sort folders and files
     const allItems = useMemo(() => {
@@ -175,25 +186,31 @@ export const MainContent = ({ user }: MainContentProps) => {
         setIsShareModalOpen(true);
     };
 
-    const currentFolderName = path[path.length - 1]?.name || 'My Files';
+    const currentFolderName = path[path.length - 1]?.name || (activeView === 'my-files' ? 'My Files' : 'Shared with me');
+    const showActionButtons = activeView === 'my-files' || (activeView === 'shared-with-me' && currentFolderId !== null);
+
 
     return (
         <main className="main-content">
             <div className="content-header">
                 <h1>{currentFolderName}</h1>
                 <div className="header-buttons">
-                    <button className="action-btn secondary" onClick={() => setIsModalOpen(true)}>
-                        <NewFolderIcon />
-                        New Folder
-                    </button>
-                    <button 
-                        className="action-btn primary"
-                        onClick={handleUploadClick}
-                        disabled={isUploading}
-                    >
-                        <UploadIcon />
-                        {isUploading ? 'Uploading...' : 'Upload'}
-                    </button>
+                    {showActionButtons && (
+                        <>
+                            <button className="action-btn secondary" onClick={() => setIsModalOpen(true)}>
+                                <NewFolderIcon />
+                                New Folder
+                            </button>
+                            <button 
+                                className="action-btn primary"
+                                onClick={handleUploadClick}
+                                disabled={isUploading}
+                            >
+                                <UploadIcon />
+                                {isUploading ? 'Uploading...' : 'Upload'}
+                            </button>
+                        </>
+                    )}
                      <input
                         type="file"
                         ref={fileInputRef}
