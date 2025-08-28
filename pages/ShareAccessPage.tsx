@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import firebase from 'firebase/compat/app';
 import { firestore } from '../firebase/config';
-import { Item } from '../types';
-import { FileIcon, FolderIcon } from '../assets/icons';
+import { Item, File as FileType } from '../types';
+import { FileIcon, FolderIcon, UploadIcon } from '../assets/icons';
 
 interface ShareAccessPageProps {
     user: firebase.User;
     itemId: string;
 }
+
+const formatBytes = (bytes?: number, decimals = 2): string => {
+    if (!bytes || bytes === 0) return '';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
 
 export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
     const [item, setItem] = useState<Item | null>(null);
@@ -15,7 +24,6 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
     const [hasAccess, setHasAccess] = useState(false);
     const [error, setError] = useState('');
     const [requesting, setRequesting] = useState(false);
-
 
     useEffect(() => {
         if (!itemId) {
@@ -45,13 +53,12 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
 
                     if (isOwner || isSharedWith) {
                         setHasAccess(true);
-                        // Redirect to dashboard with params to open the correct view/folder
-                        const targetFolderId = fetchedItem.type === 'folder' 
-                            ? fetchedItem.id 
-                            : (fetchedItem.parentId || '');
-                        
-                        // Always go to shared view for consistency when using a share link
-                        window.location.href = `/?view=shared-with-me&folderId=${targetFolderId}`;
+                        // If it's a folder, redirect. For files, we let the component render the preview.
+                        if (fetchedItem.type === 'folder') {
+                            const view = isOwner ? 'my-files' : 'shared-with-me';
+                            const targetFolderId = fetchedItem.id;
+                            window.location.href = `/?view=${view}&folderId=${targetFolderId}`;
+                        }
                     } else {
                         setHasAccess(false);
                     }
@@ -83,8 +90,34 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
         return <div className="loading-container">Checking permissions...</div>;
     }
 
-    // This case is handled by the redirect, but as a fallback:
-    if (hasAccess) {
+    // If user has access and it's a file, show the preview page.
+    if (hasAccess && item?.type === 'file') {
+        const file = item as FileType;
+        const parentFolderId = file.parentId || '';
+        const isOwner = file.ownerId === user.uid;
+        const goToFolderView = isOwner ? 'my-files' : 'shared-with-me';
+        const folderLink = `/?view=${goToFolderView}&folderId=${parentFolderId}`;
+
+        return (
+            <div className="file-preview-container">
+                <div className="file-preview-box">
+                    <div className="file-preview-icon"><FileIcon /></div>
+                    <h1 className="file-preview-name">{file.name}</h1>
+                    <p className="file-preview-info">{formatBytes(file.size)}</p>
+                    <div className="file-preview-actions">
+                        <a href={file.downloadURL} className="download-btn" target="_blank" rel="noopener noreferrer">
+                            <UploadIcon />
+                            Download
+                        </a>
+                        <a href={folderLink} className="goto-folder-link">Go to folder</a>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    
+    // If user has access and it's a folder, they are being redirected.
+    if (hasAccess && item?.type === 'folder') {
         return <div className="loading-container">Redirecting...</div>;
     }
 
@@ -92,28 +125,26 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
          return <div className="loading-container">{error}</div>;
     }
     
-    if (!item) {
-        // This case is covered by the error state, but as a fallback:
-        return <div className="loading-container">Item not found.</div>;
-    }
-
+    // If none of the above, it means user needs access or item wasn't found.
     return (
         <div className="share-access-container">
             <div className="share-access-box">
                 <h1>You need access</h1>
                 <p>Ask for access, or switch to an account with access.</p>
 
-                <div className="item-info">
-                    <div className="icon">
-                        {item.type === 'folder' ? <FolderIcon /> : <FileIcon />}
+                {item && (
+                    <div className="item-info">
+                        <div className="icon">
+                            {item.type === 'folder' ? <FolderIcon /> : <FileIcon />}
+                        </div>
+                        <div className="name">{item.name}</div>
                     </div>
-                    <div className="name">{item.name}</div>
-                </div>
+                )}
 
                 <button 
                     className="request-access-btn"
                     onClick={handleRequestAccess}
-                    disabled={requesting}
+                    disabled={requesting || !item}
                 >
                     {requesting ? 'Sending...' : 'Request Access'}
                 </button>

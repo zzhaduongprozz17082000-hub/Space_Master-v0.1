@@ -18,6 +18,7 @@ export interface File {
     downloadURL: string;
     parentId: string | null;
     ownerId: string;
+    size?: number;
     sharedWith?: { [key: string]: 'viewer' | 'editor' };
 }
 
