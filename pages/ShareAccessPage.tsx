@@ -65,9 +65,18 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
                 } else {
                     setError('The requested file or folder does not exist or may have been deleted.');
                 }
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Error fetching shared item:", err);
-                setError('An error occurred while trying to access the item.');
+                if (err.code === 'permission-denied') {
+                    // This is an expected case where the user doesn't have access.
+                    // We can't get the item details, but we can show the request access screen.
+                    setHasAccess(false);
+                    // Create a placeholder item to allow the "Request Access" button to function.
+                    setItem({ id: itemId, name: "a private item" } as Item);
+                } else {
+                    // For any other unexpected errors, show a generic message.
+                    setError('An error occurred while trying to access the item.');
+                }
             } finally {
                 setLoading(false);
             }
