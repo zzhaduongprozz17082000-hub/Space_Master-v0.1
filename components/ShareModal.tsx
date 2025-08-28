@@ -47,13 +47,39 @@ export const ShareModal = ({ isOpen, onClose, item }: ShareModalProps) => {
                 return;
             }
 
-            // 2. Update the document in the correct collection
-            const collectionName = item.type === 'folder' ? 'folders' : 'files';
-            const docRef = firestore.collection(collectionName).doc(item.id);
+            // 2. If it's a folder, share recursively. Otherwise, share the single file.
+            if (item.type === 'folder') {
+                const batch = firestore.batch();
 
-            await docRef.update({
-                [`sharedWith.${userToShareWith.uid}`]: permission,
-            });
+                const shareRecursively = async (folderId: string) => {
+                    // Share the current folder
+                    const folderRef = firestore.collection('folders').doc(folderId);
+                    batch.update(folderRef, { [`sharedWith.${userToShareWith.uid}`]: permission });
+
+                    // Get and share all sub-folders
+                    const subFoldersQuery = await firestore.collection('folders').where('parentId', '==', folderId).get();
+                    for (const doc of subFoldersQuery.docs) {
+                        await shareRecursively(doc.id); // Recursive call
+                    }
+
+                    // Get and share all files in the current folder
+                    const filesQuery = await firestore.collection('files').where('parentId', '==', folderId).get();
+                    filesQuery.forEach(doc => {
+                        const fileRef = firestore.collection('files').doc(doc.id);
+                        batch.update(fileRef, { [`sharedWith.${userToShareWith.uid}`]: permission });
+                    });
+                };
+
+                await shareRecursively(item.id);
+                await batch.commit();
+            } else {
+                // It's a single file, just update the one document
+                const docRef = firestore.collection('files').doc(item.id);
+                await docRef.update({
+                    [`sharedWith.${userToShareWith.uid}`]: permission,
+                });
+            }
+
 
             setSuccess(`Successfully shared with ${email}!`);
             setEmail('');
