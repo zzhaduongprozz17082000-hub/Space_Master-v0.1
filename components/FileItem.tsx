@@ -13,7 +13,8 @@ export const FileItem = ({ type, name, downloadURL, onClick, onShareClick }: Fil
   const icon = type === 'folder' ? <FolderIcon /> : <FileIcon />;
 
   const handleShareClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent folder navigation or file download
+    e.preventDefault(); // Prevent link navigation for files
+    e.stopPropagation(); // Prevent folder navigation
     onShareClick();
   };
 
