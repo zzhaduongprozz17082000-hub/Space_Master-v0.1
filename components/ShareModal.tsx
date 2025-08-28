@@ -46,47 +46,16 @@ export const ShareModal = ({ isOpen, onClose, item }: ShareModalProps) => {
                 setError('You cannot share an item with its owner.');
                 return;
             }
-            
-            const uidToShare = userToShareWith.uid;
 
-            if (item.type === 'file') {
-                 // Update a single file
-                const docRef = firestore.collection('files').doc(item.id);
-                await docRef.update({
-                    [`sharedWith.${uidToShare}`]: permission,
-                });
-            } else { // item.type is 'folder', share recursively
-                const batch = firestore.batch();
+            // 2. Update the document in the correct collection
+            const collectionName = item.type === 'folder' ? 'folders' : 'files';
+            const docRef = firestore.collection(collectionName).doc(item.id);
 
-                // Recursive function to apply permissions
-                const shareRecursively = async (folderId: string) => {
-                    // Share all sub-folders first
-                    const subFoldersQuery = await firestore.collection('folders').where('parentId', '==', folderId).get();
-                    // Using Promise.all to handle recursion in parallel for performance
-                    await Promise.all(subFoldersQuery.docs.map(async (doc) => {
-                        batch.update(doc.ref, { [`sharedWith.${uidToShare}`]: permission });
-                        await shareRecursively(doc.id); // Recurse into sub-folder
-                    }));
-    
-                    // Share all files in the current folder
-                    const filesQuery = await firestore.collection('files').where('parentId', '==', folderId).get();
-                    filesQuery.docs.forEach((doc) => {
-                        batch.update(doc.ref, { [`sharedWith.${uidToShare}`]: permission });
-                    });
-                };
-                
-                // Share the top-level folder itself
-                const topLevelFolderRef = firestore.collection('folders').doc(item.id);
-                batch.update(topLevelFolderRef, { [`sharedWith.${uidToShare}`]: permission });
-    
-                // Start the recursive sharing process
-                await shareRecursively(item.id);
-                
-                // Commit all the updates in a single atomic operation
-                await batch.commit();
-            }
+            await docRef.update({
+                [`sharedWith.${userToShareWith.uid}`]: permission,
+            });
 
-            setSuccess(`Successfully shared "${item.name}" with ${email}!`);
+            setSuccess(`Successfully shared with ${email}!`);
             setEmail('');
 
         } catch (err) {

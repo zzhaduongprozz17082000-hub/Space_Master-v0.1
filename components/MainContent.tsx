@@ -248,14 +248,15 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
             return parentId;
         };
         
-        const uploadPromises = Array.from(files).map(async (file) => {
-            const relativePath = (file as any).webkitRelativePath || file.name;
-            const pathSegments = relativePath.split('/').slice(0, -1);
-            const fileParentId = await getOrCreateFolderId(pathSegments, currentFolderId);
-            const storagePath = `files/${user.uid}/${Date.now()}_${file.name}`;
-            const storageRef = storage.ref(storagePath);
-
+        // Process files sequentially to prevent race conditions when creating folders.
+        for (const file of Array.from(files)) {
             try {
+                const relativePath = (file as any).webkitRelativePath || file.name;
+                const pathSegments = relativePath.split('/').slice(0, -1);
+                const fileParentId = await getOrCreateFolderId(pathSegments, currentFolderId);
+                const storagePath = `files/${user.uid}/${Date.now()}_${file.name}`;
+                const storageRef = storage.ref(storagePath);
+
                 const uploadTask = await storageRef.put(file);
                 const downloadURL = await uploadTask.ref.getDownloadURL();
                 await firestore.collection('files').add({
@@ -272,17 +273,11 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
             } catch (error) {
                 console.error(`Error uploading file ${file.name}: `, error);
             }
-        });
+        }
 
-        try {
-            await Promise.all(uploadPromises);
-        } catch (error) {
-            console.error("An error occurred during folder upload: ", error);
-        } finally {
-            setIsUploading(false);
-            if (folderInputRef.current) {
-                folderInputRef.current.value = '';
-            }
+        setIsUploading(false);
+        if (folderInputRef.current) {
+            folderInputRef.current.value = '';
         }
     };
 
