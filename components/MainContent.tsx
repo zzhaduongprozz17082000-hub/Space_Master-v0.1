@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import firebase from 'firebase/compat/app';
 import { firestore, storage } from '../firebase/config';
-import { UploadIcon, NewFolderIcon } from '../assets/icons';
+import { UploadIcon, NewFolderIcon, FolderUploadIcon } from '../assets/icons';
 import { FileItem } from './FileItem';
 import { NewFolderModal } from './NewFolderModal';
 import { ShareModal } from './ShareModal';
@@ -53,6 +53,7 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
     const [path, setPath] = useState<PathSegment[]>([{ id: null, name: 'My Files' }]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const folderInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const rootName = activeView === 'my-files' ? 'My Files' : 'Shared with me';
@@ -143,40 +144,144 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
         }
     };
     
-    const handleUploadClick = () => {
+    const handleUploadFilesClick = () => {
         fileInputRef.current?.click();
     };
     
     const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file || !user) return;
+        const files = event.target.files;
+        if (!files || files.length === 0 || !user) return;
 
         setIsUploading(true);
-        const storagePath = `files/${user.uid}/${Date.now()}_${file.name}`;
-        const storageRef = storage.ref(storagePath);
-        
+        const uploadPromises = Array.from(files).map(async (file) => {
+            const storagePath = `files/${user.uid}/${Date.now()}_${file.name}`;
+            const storageRef = storage.ref(storagePath);
+            try {
+                const uploadTask = await storageRef.put(file);
+                const downloadURL = await uploadTask.ref.getDownloadURL();
+    
+                await firestore.collection('files').add({
+                    name: file.name,
+                    ownerId: user.uid,
+                    parentId: currentFolderId,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    type: 'file',
+                    downloadURL,
+                    storagePath,
+                    size: file.size,
+                    sharedWith: {},
+                });
+            } catch (error) {
+                console.error(`Error uploading file ${file.name}: `, error);
+            }
+        });
+
         try {
-            const uploadTask = await storageRef.put(file);
-            const downloadURL = await uploadTask.ref.getDownloadURL();
-
-            await firestore.collection('files').add({
-                name: file.name,
-                ownerId: user.uid,
-                parentId: currentFolderId,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                type: 'file',
-                downloadURL,
-                storagePath,
-                size: file.size,
-                sharedWith: {},
-            });
-
-        } catch (error) {
-            console.error("Error uploading file: ", error);
+            await Promise.all(uploadPromises);
+        } catch(error) {
+            console.error("An error occurred during file uploads:", error);
         } finally {
             setIsUploading(false);
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
+            }
+        }
+    };
+
+    const handleUploadFolderClick = () => {
+        folderInputRef.current?.click();
+    };
+
+    const handleFolderChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files || files.length === 0 || !user) return;
+
+        setIsUploading(true);
+        const pathCache = new Map<string, string>();
+
+        const getOrCreateFolderId = async (
+            pathSegments: string[], 
+            rootParentId: string | null
+        ): Promise<string | null> => {
+            let parentId = rootParentId;
+            let currentPath = '';
+
+            for (const segment of pathSegments) {
+                currentPath = currentPath ? `${currentPath}/${segment}` : segment;
+
+                if (pathCache.has(currentPath)) {
+                    parentId = pathCache.get(currentPath)!;
+                    continue;
+                }
+
+                try {
+                    const foldersRef = firestore.collection('folders');
+                    const q = foldersRef
+                        .where('name', '==', segment)
+                        .where('parentId', '==', parentId)
+                        .where('ownerId', '==', user.uid)
+                        .limit(1);
+                    
+                    const snapshot = await q.get();
+
+                    if (!snapshot.empty) {
+                        const existingFolderId = snapshot.docs[0].id;
+                        pathCache.set(currentPath, existingFolderId);
+                        parentId = existingFolderId;
+                    } else {
+                        const newFolder = await foldersRef.add({
+                            name: segment,
+                            ownerId: user.uid,
+                            parentId: parentId,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            type: 'folder',
+                            sharedWith: {},
+                        });
+                        pathCache.set(currentPath, newFolder.id);
+                        parentId = newFolder.id;
+                    }
+                } catch (error) {
+                    console.error(`Failed to get or create folder for path: ${currentPath}`, error);
+                    return null;
+                }
+            }
+            return parentId;
+        };
+        
+        const uploadPromises = Array.from(files).map(async (file) => {
+            const relativePath = (file as any).webkitRelativePath || file.name;
+            const pathSegments = relativePath.split('/').slice(0, -1);
+            const fileParentId = await getOrCreateFolderId(pathSegments, currentFolderId);
+            const storagePath = `files/${user.uid}/${Date.now()}_${file.name}`;
+            const storageRef = storage.ref(storagePath);
+
+            try {
+                const uploadTask = await storageRef.put(file);
+                const downloadURL = await uploadTask.ref.getDownloadURL();
+                await firestore.collection('files').add({
+                    name: file.name,
+                    ownerId: user.uid,
+                    parentId: fileParentId,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    type: 'file',
+                    downloadURL,
+                    storagePath,
+                    size: file.size,
+                    sharedWith: {},
+                });
+            } catch (error) {
+                console.error(`Error uploading file ${file.name}: `, error);
+            }
+        });
+
+        try {
+            await Promise.all(uploadPromises);
+        } catch (error) {
+            console.error("An error occurred during folder upload: ", error);
+        } finally {
+            setIsUploading(false);
+            if (folderInputRef.current) {
+                folderInputRef.current.value = '';
             }
         }
     };
@@ -197,17 +302,25 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
                 <div className="header-buttons">
                     {showActionButtons && (
                         <>
-                            <button className="action-btn secondary" onClick={() => setIsModalOpen(true)}>
+                            <button className="action-btn secondary" onClick={() => setIsModalOpen(true)} disabled={isUploading}>
                                 <NewFolderIcon />
                                 New Folder
                             </button>
+                             <button 
+                                className="action-btn secondary"
+                                onClick={handleUploadFolderClick}
+                                disabled={isUploading}
+                            >
+                                <FolderUploadIcon />
+                                {isUploading ? 'Uploading...' : 'Upload Folder'}
+                            </button>
                             <button 
                                 className="action-btn primary"
-                                onClick={handleUploadClick}
+                                onClick={handleUploadFilesClick}
                                 disabled={isUploading}
                             >
                                 <UploadIcon />
-                                {isUploading ? 'Uploading...' : 'Upload'}
+                                {isUploading ? 'Uploading...' : 'Upload Files'}
                             </button>
                         </>
                     )}
@@ -216,6 +329,14 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
                         ref={fileInputRef}
                         onChange={handleFileChange}
                         style={{ display: 'none' }}
+                        multiple
+                    />
+                     <input
+                        type="file"
+                        ref={folderInputRef}
+                        onChange={handleFolderChange}
+                        style={{ display: 'none' }}
+                        {...{ webkitdirectory: "true", mozdirectory: "true", directory: "true" }}
                     />
                 </div>
             </div>
