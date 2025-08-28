@@ -1,6 +1,5 @@
 import firebase from 'firebase/compat/app';
 
-// Define types for folder and file
 export interface Folder {
     id: string;
     name: string;

@@ -504,104 +504,116 @@ a.file-item-link:visited {
     margin: 0 0.25rem;
 }
 
-/* Share Modal Link Section */
-.share-link-section {
-    margin-top: 2rem;
-    border-top: 1px solid var(--border-color);
-    padding-top: 1.5rem;
+/* Share Modal "Get Link" Styles */
+.modal-divider {
+    border: none;
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 2rem 0;
 }
 
-.share-link-section .form-group {
+.get-link-section h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
     margin-bottom: 1rem;
 }
 
-.share-link-input-wrapper {
+.link-container {
     display: flex;
+    align-items: center;
     gap: 0.5rem;
-}
-
-.share-link-input-wrapper input {
-    flex-grow: 1;
-    background-color: #0d1117; /* Even darker for emphasis */
-    cursor: text;
-}
-
-.share-link-input-wrapper .btn {
-    padding: 0.6rem 1rem;
-    font-size: 0.9rem;
-    border-radius: 6px;
-    cursor: pointer;
+    background-color: var(--background-dark);
     border: 1px solid var(--border-color);
-    background-color: var(--background-light);
+    border-radius: 6px;
+    padding: 0.25rem;
+}
+
+.link-container input {
+    flex-grow: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    outline: none;
+}
+
+.link-container button {
+    background-color: var(--border-color);
     color: var(--text-primary);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
     transition: background-color 0.2s;
 }
 
-.share-link-input-wrapper .btn:hover {
-    background-color: var(--border-color);
+.link-container button:hover {
+    background-color: #484f58;
 }
 
 /* Share Access Page */
-.share-access-page-container {
+.share-access-container {
     width: 100%;
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
 }
-
 .share-access-box {
     background-color: var(--background-light);
-    padding: 3rem;
-    border-radius: 12px;
     border: 1px solid var(--border-color);
-    width: 100%;
-    max-width: 500px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 3rem;
     text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    max-width: 500px;
 }
-
-.share-access-box .file-item-icon {
-    color: var(--text-secondary);
-    margin-bottom: 1.5rem;
-}
-
-.share-access-box .file-item-icon svg {
-    width: 80px;
-    height: 80px;
-}
-
 .share-access-box h1 {
     font-size: 1.5rem;
-    font-weight: 500;
     margin-bottom: 0.5rem;
-    word-break: break-word;
 }
-
 .share-access-box p {
     color: var(--text-secondary);
     margin-bottom: 2rem;
 }
-
+.item-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background-color: var(--background-dark);
+    border-radius: 6px;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border-color);
+}
+.item-info .icon {
+    font-size: 2rem;
+    color: var(--accent-primary);
+}
+.item-info .icon svg {
+    width: 48px;
+    height: 48px;
+}
+.item-info .name {
+    font-size: 1.1rem;
+    font-weight: 500;
+    word-break: break-all;
+}
 .request-access-btn {
+    width: 100%;
     background-color: var(--accent-primary);
     color: white;
+    padding: 0.75rem;
     border: none;
-    padding: 0.75rem 1.5rem;
     border-radius: 6px;
     font-size: 1rem;
     font-weight: 500;
     cursor: pointer;
     transition: background-color 0.2s;
-    width: 100%;
 }
-
 .request-access-btn:hover {
     background-color: var(--accent-hover);
 }
-
 .request-access-btn:disabled {
     background-color: var(--border-color);
     cursor: not-allowed;

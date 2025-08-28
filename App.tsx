@@ -27,16 +27,15 @@ export const App = () => {
   }
 
   const path = window.location.pathname;
-  // Regex to match /share/ followed by an alphanumeric ID
-  const sharePathMatch = path.match(/^\/share\/([a-zA-Z0-9]+)$/);
-
+  const isShareRoute = path.startsWith('/share/');
+  
   if (user) {
-    if (sharePathMatch) {
-      const itemId = sharePathMatch[1];
+    if (isShareRoute) {
+      const itemId = path.split('/')[2];
       return <ShareAccessPage user={user} itemId={itemId} />;
     }
     return <DashboardPage user={user} />;
-  } else {
-    return <LoginPage />;
   }
+  
+  return <LoginPage />;
 };

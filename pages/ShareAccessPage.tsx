@@ -10,55 +10,53 @@ interface ShareAccessPageProps {
 }
 
 export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
-    const [loading, setLoading] = useState(true);
     const [item, setItem] = useState<Item | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [hasAccess, setHasAccess] = useState(false);
     const [error, setError] = useState('');
-    const [requestSent, setRequestSent] = useState(false);
+    const [requesting, setRequesting] = useState(false);
+
 
     useEffect(() => {
+        if (!itemId) {
+            setError('Invalid share link.');
+            setLoading(false);
+            return;
+        }
+
         const fetchItemAndCheckAccess = async () => {
-            if (!itemId) {
-                setError("Invalid link.");
-                setLoading(false);
-                return;
-            }
-
             try {
-                // Check both collections to find the item.
-                const folderRef = firestore.collection('folders').doc(itemId);
-                const fileRef = firestore.collection('files').doc(itemId);
-                
-                let docSnapshot;
-                const folderDoc = await folderRef.get();
-                if (folderDoc.exists) {
-                    docSnapshot = folderDoc;
-                } else {
-                    docSnapshot = await fileRef.get();
+                // Try fetching from 'folders', then from 'files'
+                let docRef = firestore.collection('folders').doc(itemId);
+                let docSnap = await docRef.get();
+
+                if (!docSnap.exists) {
+                    docRef = firestore.collection('files').doc(itemId);
+                    docSnap = await docRef.get();
                 }
 
-                if (!docSnapshot.exists) {
-                    setError("This file or folder doesn't exist or may have been deleted.");
-                    setLoading(false);
-                    return;
-                }
+                if (docSnap.exists) {
+                    const fetchedItem = { id: docSnap.id, ...docSnap.data() } as Item;
+                    setItem(fetchedItem);
 
-                const itemData = { id: docSnapshot.id, ...docSnapshot.data() } as Item;
-                setItem(itemData);
+                    // Check access
+                    const isOwner = fetchedItem.ownerId === user.uid;
+                    const isSharedWith = fetchedItem.sharedWith && fetchedItem.sharedWith[user.uid];
 
-                // Check access: user is owner or it's shared with them.
-                const isOwner = itemData.ownerId === user.uid;
-                const isSharedWithUser = itemData.sharedWith && itemData.sharedWith[user.uid];
-
-                if (isOwner || isSharedWithUser) {
-                    // User has access, redirect to the main dashboard.
-                    window.location.href = '/';
+                    if (isOwner || isSharedWith) {
+                        setHasAccess(true);
+                        // Redirect to dashboard
+                        window.location.href = '/';
+                    } else {
+                        setHasAccess(false);
+                    }
                 } else {
-                    // User does not have access, stay on this page to show the request button.
-                    setLoading(false);
+                    setError('The requested file or folder does not exist or may have been deleted.');
                 }
             } catch (err) {
-                console.error("Error fetching item:", err);
-                setError("An error occurred while trying to access the item.");
+                console.error("Error fetching shared item:", err);
+                setError('An error occurred while trying to access the item.');
+            } finally {
                 setLoading(false);
             }
         };
@@ -66,43 +64,54 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
         fetchItemAndCheckAccess();
     }, [itemId, user.uid]);
 
+    const handleRequestAccess = () => {
+        setRequesting(true);
+        // In a real app, this would trigger a notification to the owner.
+        // For now, we just show a confirmation message.
+        setTimeout(() => {
+            alert("Your request has been sent to the owner.");
+            setRequesting(false);
+        }, 1000);
+    };
+
     if (loading) {
         return <div className="loading-container">Checking permissions...</div>;
     }
+
+    // This case is handled by the redirect, but as a fallback:
+    if (hasAccess) {
+        return <div className="loading-container">Redirecting...</div>;
+    }
+
+    if (error) {
+         return <div className="loading-container">{error}</div>;
+    }
     
-    const handleRequestAccess = () => {
-        // In a real app, this would trigger a notification to the owner.
-        // For now, we just update the UI state.
-        setRequestSent(true);
-    };
+    if (!item) {
+        // This case is covered by the error state, but as a fallback:
+        return <div className="loading-container">Item not found.</div>;
+    }
 
     return (
-        <div className="share-access-page-container">
+        <div className="share-access-container">
             <div className="share-access-box">
-                {error ? (
-                    <>
-                        <h1>Access Denied</h1>
-                        <p>{error}</p>
-                    </>
-                ) : (
-                    item && (
-                        <>
-                            <div className="file-item-icon">
-                                {item.type === 'folder' ? <FolderIcon /> : <FileIcon />}
-                            </div>
-                            <h1>{item.name}</h1>
-                            <p>You need access to view this item.</p>
+                <h1>You need access</h1>
+                <p>Ask for access, or switch to an account with access.</p>
 
-                            <button
-                                className="request-access-btn"
-                                onClick={handleRequestAccess}
-                                disabled={requestSent}
-                            >
-                                {requestSent ? 'Request Sent' : 'Request Access'}
-                            </button>
-                        </>
-                    )
-                )}
+                <div className="item-info">
+                    <div className="icon">
+                        {item.type === 'folder' ? <FolderIcon /> : <FileIcon />}
+                    </div>
+                    <div className="name">{item.name}</div>
+                </div>
+
+                <button 
+                    className="request-access-btn"
+                    onClick={handleRequestAccess}
+                    disabled={requesting}
+                >
+                    {requesting ? 'Sending...' : 'Request Access'}
+                </button>
             </div>
         </div>
     );
