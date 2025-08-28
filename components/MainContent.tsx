@@ -11,6 +11,7 @@ import { Item, Folder, File } from '../types';
 interface MainContentProps {
     user: firebase.User;
     activeView: 'my-files' | 'shared-with-me';
+    initialFolderId: string | null;
 }
 
 interface PathSegment {
@@ -18,7 +19,7 @@ interface PathSegment {
     name: string;
 }
 
-export const MainContent = ({ user, activeView }: MainContentProps) => {
+export const MainContent = ({ user, activeView, initialFolderId }: MainContentProps) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [sharingItem, setSharingItem] = useState<Item | null>(null);
@@ -28,18 +29,58 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
     const [sharedFiles, setSharedFiles] = useState<File[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
-    const [path, setPath] = useState<PathSegment[]>([{ id: null, name: 'My Files' }]);
+    const [path, setPath] = useState<PathSegment[]>([]);
+    const [isLoadingPath, setIsLoadingPath] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const folderInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const rootName = activeView === 'my-files' ? 'My Files' : 'Shared with me';
-        setPath([{ id: null, name: rootName }]);
-        setCurrentFolderId(null);
-    }, [activeView]);
+        const initializeView = async () => {
+            setIsLoadingPath(true);
+            const rootName = activeView === 'my-files' ? 'My Files' : 'Shared with me';
+    
+            // If there's no specific folder to link to, just go to the root of the current view.
+            if (!initialFolderId) {
+                setPath([{ id: null, name: rootName }]);
+                setCurrentFolderId(null);
+                setIsLoadingPath(false);
+                return;
+            }
+    
+            // Build the path for the deep-linked folder.
+            try {
+                const newPath: PathSegment[] = [];
+                let currentId: string | null = initialFolderId;
+    
+                while (currentId) {
+                    const folderDoc = await firestore.collection('folders').doc(currentId).get();
+                    if (folderDoc.exists) {
+                        const folderData = folderDoc.data() as Omit<Folder, 'id'>;
+                        newPath.unshift({ id: folderDoc.id, name: folderData.name });
+                        currentId = folderData.parentId;
+                    } else {
+                        throw new Error(`Folder with ID ${currentId} not found.`);
+                    }
+                }
+                
+                newPath.unshift({ id: null, name: rootName });
+                setPath(newPath);
+                setCurrentFolderId(initialFolderId);
+            } catch (error) {
+                console.error("Error building path:", error);
+                // Fallback to the root if path construction fails.
+                setPath([{ id: null, name: rootName }]);
+                setCurrentFolderId(null);
+            } finally {
+                setIsLoadingPath(false);
+            }
+        };
+    
+        initializeView();
+    }, [initialFolderId, activeView]);
 
     useEffect(() => {
-        if (!user) return;
+        if (!user || isLoadingPath) return;
     
         const subscriptions: (() => void)[] = [];
 
@@ -74,7 +115,7 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
         return () => {
             subscriptions.forEach(unsub => unsub());
         };
-    }, [user, currentFolderId, activeView]);
+    }, [user, currentFolderId, activeView, isLoadingPath]);
 
     // Combine and sort folders and files
     const allItems = useMemo(() => {
@@ -366,32 +407,35 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
                 ))}
             </nav>
 
-            <div className="file-grid">
-                {/* FIX: Refactored to use if/else for better type inference and to fix TS error. */}
-                {allItems.map((item) => {
-                    if (item.type === 'folder') {
-                        return (
-                            <FileItem
-                                key={item.id}
-                                type={item.type}
-                                name={item.name}
-                                onClick={() => handleFolderClick(item)}
-                                onShareClick={() => handleShareClick(item)}
-                            />
-                        );
-                    } else {
-                        return (
-                            <FileItem
-                                key={item.id}
-                                type={item.type}
-                                name={item.name}
-                                downloadURL={item.downloadURL}
-                                onShareClick={() => handleShareClick(item)}
-                            />
-                        );
-                    }
-                })}
-            </div>
+            {isLoadingPath ? (
+                 <div className="loading-container" style={{height: '50vh'}}>Loading folder...</div>
+            ) : (
+                <div className="file-grid">
+                    {allItems.map((item) => {
+                        if (item.type === 'folder') {
+                            return (
+                                <FileItem
+                                    key={item.id}
+                                    type={item.type}
+                                    name={item.name}
+                                    onClick={() => handleFolderClick(item)}
+                                    onShareClick={() => handleShareClick(item)}
+                                />
+                            );
+                        } else {
+                            return (
+                                <FileItem
+                                    key={item.id}
+                                    type={item.type}
+                                    name={item.name}
+                                    downloadURL={item.downloadURL}
+                                    onShareClick={() => handleShareClick(item)}
+                                />
+                            );
+                        }
+                    })}
+                </div>
+            )}
             {isModalOpen && (
                 <NewFolderModal
                     isOpen={isModalOpen}

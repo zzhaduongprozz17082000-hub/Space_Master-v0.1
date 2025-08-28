@@ -45,8 +45,13 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
 
                     if (isOwner || isSharedWith) {
                         setHasAccess(true);
-                        // Redirect to dashboard
-                        window.location.href = '/';
+                        // Redirect to dashboard with params to open the correct view/folder
+                        const targetFolderId = fetchedItem.type === 'folder' 
+                            ? fetchedItem.id 
+                            : (fetchedItem.parentId || '');
+                        
+                        // Always go to shared view for consistency when using a share link
+                        window.location.href = `/?view=shared-with-me&folderId=${targetFolderId}`;
                     } else {
                         setHasAccess(false);
                     }
