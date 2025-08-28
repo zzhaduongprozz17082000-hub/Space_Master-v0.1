@@ -5,36 +5,13 @@ import { UploadIcon, NewFolderIcon, FolderUploadIcon } from '../assets/icons';
 import { FileItem } from './FileItem';
 import { NewFolderModal } from './NewFolderModal';
 import { ShareModal } from './ShareModal';
+import { Item, Folder, File } from '../types';
 
 
 interface MainContentProps {
     user: firebase.User;
     activeView: 'my-files' | 'shared-with-me';
 }
-
-// Define types for folder and file
-export interface Folder {
-    id: string;
-    name: string;
-    type: 'folder';
-    createdAt: firebase.firestore.Timestamp;
-    parentId: string | null;
-    ownerId: string;
-    sharedWith?: { [key: string]: 'viewer' | 'editor' };
-}
-
-export interface File {
-    id: string;
-    name: string;
-    type: 'file';
-    createdAt: firebase.firestore.Timestamp;
-    downloadURL: string;
-    parentId: string | null;
-    ownerId: string;
-    sharedWith?: { [key: string]: 'viewer' | 'editor' };
-}
-
-export type Item = Folder | File;
 
 interface PathSegment {
     id: string | null;

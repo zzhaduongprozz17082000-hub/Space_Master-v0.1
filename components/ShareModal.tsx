@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { firestore } from '../firebase/config';
-import { Item } from './MainContent';
+import { Item } from '../types';
 
 type Permission = 'viewer' | 'editor';
 
@@ -15,10 +15,22 @@ export const ShareModal = ({ isOpen, onClose, item }: ShareModalProps) => {
     const [permission, setPermission] = useState<Permission>('viewer');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [copyButtonText, setCopyButtonText] = useState('Copy link');
 
     if (!isOpen) {
         return null;
     }
+
+    const shareableLink = `${window.location.origin}/share/${item.id}`;
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(shareableLink).then(() => {
+            setCopyButtonText('Copied!');
+            setTimeout(() => setCopyButtonText('Copy link'), 2000);
+        }).catch(err => {
+            console.error('Failed to copy link: ', err);
+        });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -100,6 +112,8 @@ export const ShareModal = ({ isOpen, onClose, item }: ShareModalProps) => {
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <h2>Share "{item.name}"</h2>
+                
+                {/* Share with people form */}
                 <form className="modal-form" onSubmit={handleSubmit}>
                     <div className="share-form-row">
                         <div className="form-group">
@@ -130,16 +144,31 @@ export const ShareModal = ({ isOpen, onClose, item }: ShareModalProps) => {
                     {error && <p style={{ color: 'var(--danger-color)', marginTop: '1rem' }}>{error}</p>}
                     {success && <p style={{ color: 'lightgreen', marginTop: '1rem' }}>{success}</p>}
 
-
-                    <div className="modal-actions" style={{marginTop: '1.5rem'}}>
-                        <button type="button" className="btn btn-secondary" onClick={onClose}>
-                            Done
-                        </button>
+                    <div className="modal-actions" style={{marginTop: '1.5rem', justifyContent: 'flex-start'}}>
                         <button type="submit" className="btn btn-primary">
                             Share
                         </button>
                     </div>
                 </form>
+
+                {/* Get link section */}
+                <div className="share-link-section">
+                    <div className="form-group">
+                        <label>Get link</label>
+                        <div className="share-link-input-wrapper">
+                            <input type="text" value={shareableLink} readOnly />
+                            <button className="btn" onClick={handleCopyLink}>
+                                {copyButtonText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="modal-actions" style={{marginTop: '1.5rem'}}>
+                    <button type="button" className="btn btn-secondary" onClick={onClose}>
+                        Done
+                    </button>
+                </div>
             </div>
         </div>
     );

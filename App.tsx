@@ -4,6 +4,7 @@ import firebase from 'firebase/compat/app';
 import { auth } from './firebase/config';
 import { DashboardPage } from './pages/DashboardPage';
 import { LoginPage } from './pages/LoginPage';
+import { ShareAccessPage } from './pages/ShareAccessPage';
 
 export const App = () => {
   // FIX: Update User type to firebase.User for v8 compatibility.
@@ -25,9 +26,17 @@ export const App = () => {
     return <div className="loading-container">Loading...</div>;
   }
 
-  return (
-    <>
-      {user ? <DashboardPage user={user} /> : <LoginPage />}
-    </>
-  );
+  const path = window.location.pathname;
+  // Regex to match /share/ followed by an alphanumeric ID
+  const sharePathMatch = path.match(/^\/share\/([a-zA-Z0-9]+)$/);
+
+  if (user) {
+    if (sharePathMatch) {
+      const itemId = sharePathMatch[1];
+      return <ShareAccessPage user={user} itemId={itemId} />;
+    }
+    return <DashboardPage user={user} />;
+  } else {
+    return <LoginPage />;
+  }
 };
