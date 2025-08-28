@@ -130,13 +130,21 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
         if (!folderName.trim() || !user) return;
         
         try {
+            let parentSharedWith = {};
+            if (currentFolderId) {
+                const parentFolderDoc = await firestore.collection('folders').doc(currentFolderId).get();
+                if (parentFolderDoc.exists) {
+                    parentSharedWith = parentFolderDoc.data()?.sharedWith || {};
+                }
+            }
+
             await firestore.collection('folders').add({
                 name: folderName.trim(),
                 ownerId: user.uid,
                 parentId: currentFolderId,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 type: 'folder',
-                sharedWith: {},
+                sharedWith: parentSharedWith,
             });
             setIsModalOpen(false);
         } catch (error) {
@@ -153,6 +161,19 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
         if (!files || files.length === 0 || !user) return;
 
         setIsUploading(true);
+
+        let parentSharedWith = {};
+        if (currentFolderId) {
+            try {
+                const parentFolderDoc = await firestore.collection('folders').doc(currentFolderId).get();
+                if (parentFolderDoc.exists) {
+                    parentSharedWith = parentFolderDoc.data()?.sharedWith || {};
+                }
+            } catch (error) {
+                console.error("Error fetching parent folder permissions:", error);
+            }
+        }
+
         const uploadPromises = Array.from(files).map(async (file) => {
             const storagePath = `files/${user.uid}/${Date.now()}_${file.name}`;
             const storageRef = storage.ref(storagePath);
@@ -169,7 +190,7 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
                     downloadURL,
                     storagePath,
                     size: file.size,
-                    sharedWith: {},
+                    sharedWith: parentSharedWith,
                 });
             } catch (error) {
                 console.error(`Error uploading file ${file.name}: `, error);
@@ -197,20 +218,36 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
         if (!files || files.length === 0 || !user) return;
 
         setIsUploading(true);
-        const pathCache = new Map<string, string>();
+        const pathCache = new Map<string, { id: string; sharedWith: { [key: string]: 'viewer' | 'editor' } }>();
 
+        let initialSharedWith: { [key: string]: 'viewer' | 'editor' } = {};
+        if (currentFolderId) {
+            try {
+                const parentFolderDoc = await firestore.collection('folders').doc(currentFolderId).get();
+                if (parentFolderDoc.exists) {
+                    initialSharedWith = parentFolderDoc.data()?.sharedWith || {};
+                }
+            } catch (error) {
+                console.error("Error fetching root folder permissions:", error);
+            }
+        }
+        
         const getOrCreateFolderId = async (
             pathSegments: string[], 
-            rootParentId: string | null
-        ): Promise<string | null> => {
+            rootParentId: string | null,
+            currentSharedWith: { [key: string]: 'viewer' | 'editor' }
+        ): Promise<{ folderId: string | null; finalSharedWith: { [key: string]: 'viewer' | 'editor' } }> => {
             let parentId = rootParentId;
+            let parentSharedWith = currentSharedWith;
             let currentPath = '';
 
             for (const segment of pathSegments) {
                 currentPath = currentPath ? `${currentPath}/${segment}` : segment;
 
                 if (pathCache.has(currentPath)) {
-                    parentId = pathCache.get(currentPath)!;
+                    const cached = pathCache.get(currentPath)!;
+                    parentId = cached.id;
+                    parentSharedWith = cached.sharedWith;
                     continue;
                 }
 
@@ -225,8 +262,10 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
                     const snapshot = await q.get();
 
                     if (!snapshot.empty) {
-                        const existingFolderId = snapshot.docs[0].id;
-                        pathCache.set(currentPath, existingFolderId);
+                        const existingFolder = snapshot.docs[0];
+                        const existingFolderId = existingFolder.id;
+                        parentSharedWith = existingFolder.data().sharedWith || {};
+                        pathCache.set(currentPath, { id: existingFolderId, sharedWith: parentSharedWith });
                         parentId = existingFolderId;
                     } else {
                         const newFolder = await foldersRef.add({
@@ -235,17 +274,17 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
                             parentId: parentId,
                             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                             type: 'folder',
-                            sharedWith: {},
+                            sharedWith: parentSharedWith,
                         });
-                        pathCache.set(currentPath, newFolder.id);
+                        pathCache.set(currentPath, { id: newFolder.id, sharedWith: parentSharedWith });
                         parentId = newFolder.id;
                     }
                 } catch (error) {
                     console.error(`Failed to get or create folder for path: ${currentPath}`, error);
-                    return null;
+                    return { folderId: null, finalSharedWith: {} };
                 }
             }
-            return parentId;
+            return { folderId: parentId, finalSharedWith: parentSharedWith };
         };
         
         // Process files sequentially to prevent race conditions when creating folders.
@@ -253,7 +292,7 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
             try {
                 const relativePath = (file as any).webkitRelativePath || file.name;
                 const pathSegments = relativePath.split('/').slice(0, -1);
-                const fileParentId = await getOrCreateFolderId(pathSegments, currentFolderId);
+                const { folderId: fileParentId, finalSharedWith } = await getOrCreateFolderId(pathSegments, currentFolderId, initialSharedWith);
                 const storagePath = `files/${user.uid}/${Date.now()}_${file.name}`;
                 const storageRef = storage.ref(storagePath);
 
@@ -268,7 +307,7 @@ export const MainContent = ({ user, activeView }: MainContentProps) => {
                     downloadURL,
                     storagePath,
                     size: file.size,
-                    sharedWith: {},
+                    sharedWith: finalSharedWith,
                 });
             } catch (error) {
                 console.error(`Error uploading file ${file.name}: `, error);
