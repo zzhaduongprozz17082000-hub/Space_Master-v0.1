@@ -57,13 +57,19 @@ export const ShareModal = ({ isOpen, onClose, item }: ShareModalProps) => {
                     batch.update(folderRef, { [`sharedWith.${userToShareWith.uid}`]: permission });
 
                     // Get and share all sub-folders
-                    const subFoldersQuery = await firestore.collection('folders').where('parentId', '==', folderId).get();
+                    const subFoldersQuery = await firestore.collection('folders')
+                        .where('parentId', '==', folderId)
+                        .where('ownerId', '==', item.ownerId)
+                        .get();
                     for (const doc of subFoldersQuery.docs) {
                         await shareRecursively(doc.id); // Recursive call
                     }
 
                     // Get and share all files in the current folder
-                    const filesQuery = await firestore.collection('files').where('parentId', '==', folderId).get();
+                    const filesQuery = await firestore.collection('files')
+                        .where('parentId', '==', folderId)
+                        .where('ownerId', '==', item.ownerId)
+                        .get();
                     filesQuery.forEach(doc => {
                         const fileRef = firestore.collection('files').doc(doc.id);
                         batch.update(fileRef, { [`sharedWith.${userToShareWith.uid}`]: permission });
