@@ -599,8 +599,26 @@ a.file-item-link:visited {
     font-weight: 500;
     word-break: break-all;
 }
+
+.request-access-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.permission-selector {
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-dark);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: var(--font-family);
+    min-width: 130px;
+}
+
 .request-access-btn {
-    width: 100%;
+    flex-grow: 1;
     background-color: var(--accent-primary);
     color: white;
     padding: 0.75rem;

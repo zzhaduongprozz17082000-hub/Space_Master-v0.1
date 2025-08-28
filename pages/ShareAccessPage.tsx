@@ -24,6 +24,7 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
     const [hasAccess, setHasAccess] = useState(false);
     const [error, setError] = useState('');
     const [requesting, setRequesting] = useState(false);
+    const [requestedPermission, setRequestedPermission] = useState<'viewer' | 'editor'>('viewer');
 
     useEffect(() => {
         if (!itemId) {
@@ -34,19 +35,14 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
 
         const fetchItemAndCheckAccess = async () => {
             try {
-                let docRef = null;
-                let docSnap = null;
-                try {
-                    // Try fetching from 'folders', then from 'files'
-                    let docRef = firestore.collection('folders').doc(itemId);
-                    let docSnap = await docRef.get();
-                } catch(err) {
-                    console.log(err)
-                }
+                // Try fetching from 'folders' first
+                const folderRef = firestore.collection('folders').doc(itemId);
+                let docSnap = await folderRef.get();
 
-                if (!docSnap || !docSnap.exists) {
-                    docRef = firestore.collection('files').doc(itemId);
-                    docSnap = await docRef.get();
+                // If it's not in folders, try 'files'
+                if (!docSnap.exists) {
+                    const fileRef = firestore.collection('files').doc(itemId);
+                    docSnap = await fileRef.get();
                 }
 
                 if (docSnap.exists) {
@@ -96,7 +92,7 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
         // In a real app, this would trigger a notification to the owner.
         // For now, we just show a confirmation message.
         setTimeout(() => {
-            alert("Your request has been sent to the owner.");
+            alert(`Your request for '${requestedPermission}' access has been sent to the owner.`);
             setRequesting(false);
         }, 1000);
     };
@@ -156,13 +152,24 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
                     </div>
                 )}
 
-                <button 
-                    className="request-access-btn"
-                    onClick={handleRequestAccess}
-                    disabled={requesting || !item}
-                >
-                    {requesting ? 'Sending...' : 'Request Access'}
-                </button>
+                <div className="request-access-actions">
+                    <select
+                        className="permission-selector"
+                        value={requestedPermission}
+                        onChange={(e) => setRequestedPermission(e.target.value as 'viewer' | 'editor')}
+                        disabled={requesting || !item}
+                    >
+                        <option value="viewer">Can view</option>
+                        <option value="editor">Can edit</option>
+                    </select>
+                    <button 
+                        className="request-access-btn"
+                        onClick={handleRequestAccess}
+                        disabled={requesting || !item}
+                    >
+                        {requesting ? 'Sending...' : 'Request Access'}
+                    </button>
+                </div>
             </div>
         </div>
     );
