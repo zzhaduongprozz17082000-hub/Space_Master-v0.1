@@ -34,11 +34,17 @@ export const ShareAccessPage = ({ user, itemId }: ShareAccessPageProps) => {
 
         const fetchItemAndCheckAccess = async () => {
             try {
-                // Try fetching from 'folders', then from 'files'
-                let docRef = firestore.collection('folders').doc(itemId);
-                let docSnap = await docRef.get();
+                let docRef = null;
+                let docSnap = null;
+                try {
+                    // Try fetching from 'folders', then from 'files'
+                    let docRef = firestore.collection('folders').doc(itemId);
+                    let docSnap = await docRef.get();
+                } catch(err) {
+                    console.log(err)
+                }
 
-                if (!docSnap.exists) {
+                if (!docSnap || !docSnap.exists) {
                     docRef = firestore.collection('files').doc(itemId);
                     docSnap = await docRef.get();
                 }
