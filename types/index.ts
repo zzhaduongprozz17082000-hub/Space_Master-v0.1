@@ -1,5 +1,13 @@
 import firebase from 'firebase/compat/app';
 
+export interface User {
+    uid: string;
+    email: string;
+    displayName: string;
+    photoURL: string;
+    role?: 'admin' | 'user';
+}
+
 export interface Folder {
     id: string;
     name: string;

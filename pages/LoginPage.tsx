@@ -12,14 +12,25 @@ export const LoginPage = () => {
         try {
             const result = await auth.signInWithPopup(provider);
             if (result.user) {
-                // Create or update user document in Firestore
                 const userRef = firestore.collection('users').doc(result.user.uid);
-                await userRef.set({
-                    uid: result.user.uid,
-                    email: result.user.email,
-                    displayName: result.user.displayName,
-                    photoURL: result.user.photoURL,
-                }, { merge: true }); // Use merge to avoid overwriting existing data
+                const doc = await userRef.get();
+
+                if (!doc.exists) {
+                    // New user, create document with default role
+                    await userRef.set({
+                        uid: result.user.uid,
+                        email: result.user.email,
+                        displayName: result.user.displayName,
+                        photoURL: result.user.photoURL,
+                        role: 'user' // Default role
+                    });
+                } else {
+                    // Existing user, just update their profile info
+                    await userRef.update({
+                        displayName: result.user.displayName,
+                        photoURL: result.user.photoURL,
+                    });
+                }
             }
         } catch (error) {
             console.error("Authentication error: ", error);

@@ -706,3 +706,143 @@ a.file-item-link:visited {
 .goto-folder-link:hover {
     text-decoration: underline;
 }
+
+
+/* Admin Panel Styles */
+.admin-layout-container {
+    display: flex;
+    width: 100%;
+}
+
+.admin-main-content {
+    flex-grow: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.admin-header {
+    font-size: 2rem;
+    font-weight: 500;
+    margin-bottom: 2rem;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.stat-card {
+    background-color: var(--background-light);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.stat-card-icon {
+    font-size: 2rem;
+    padding: 1rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(88, 166, 255, 0.1);
+    color: var(--accent-primary);
+}
+
+.stat-card-icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.stat-card-info h3 {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-bottom: 0.25rem;
+}
+
+.stat-card-info p {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* User Management Table */
+.user-table-container {
+    background-color: var(--background-light);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.user-table th, .user-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.user-table th {
+    font-weight: 500;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+}
+
+.user-table td {
+    color: var(--text-primary);
+}
+
+.user-table tr:last-child td {
+    border-bottom: none;
+}
+
+.user-table .user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.user-table .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.user-table .user-name {
+    font-weight: 500;
+}
+
+.user-table .role-select {
+    width: 100%;
+    max-width: 120px;
+    padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: var(--background-dark);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.user-table .delete-btn {
+    background: transparent;
+    border: 1px solid var(--danger-color);
+    color: var(--danger-color);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.user-table .delete-btn:hover {
+    background: var(--danger-color);
+    color: white;
+}
