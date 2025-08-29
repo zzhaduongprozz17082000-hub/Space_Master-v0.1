@@ -361,7 +361,9 @@ export const MainContent = ({ user, activeView, initialFolderId }: MainContentPr
     
             const deleteFolderRecursively = async (folderId: string) => {
                 // Get and delete files in folder
-                const filesQuery = firestore.collection('files').where('parentId', '==', folderId);
+                const filesQuery = firestore.collection('files')
+                    .where('parentId', '==', folderId)
+                    .where('ownerId', '==', user.uid);
                 const filesInFolder = await filesQuery.get();
                 const fileStorageDeletionPromises: Promise<void>[] = [];
     
@@ -375,7 +377,9 @@ export const MainContent = ({ user, activeView, initialFolderId }: MainContentPr
                 await Promise.all(fileStorageDeletionPromises);
     
                 // Get sub-folders and delete them recursively
-                const subFoldersQuery = firestore.collection('folders').where('parentId', '==', folderId);
+                const subFoldersQuery = firestore.collection('folders')
+                    .where('parentId', '==', folderId)
+                    .where('ownerId', '==', user.uid);
                 const subFolders = await subFoldersQuery.get();
                 for (const subFolderDoc of subFolders.docs) {
                     await deleteFolderRecursively(subFolderDoc.id);
