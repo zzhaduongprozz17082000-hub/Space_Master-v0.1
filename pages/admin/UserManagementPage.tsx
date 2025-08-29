@@ -34,15 +34,15 @@ export const UserManagementPage = () => {
         }
     };
 
-    const handleDeleteUser = async (uid: string) => {
-        if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    const handleDeleteUser = async (uid: string, displayName: string) => {
+        if (window.confirm(`Are you sure you want to permanently delete "${displayName}"? This will remove the user and all of their associated data. This action cannot be undone.`)) {
             try {
-                await firestore.collection('users').doc(uid).delete();
-                // Note: This only deletes the Firestore record.
-                // Deleting from Firebase Auth requires a Cloud Function.
+                const deleteUserFunction = functions.httpsCallable('deleteUser');
+                await deleteUserFunction({ uid });
+                // The onSnapshot listener will automatically update the UI after deletion.
             } catch (err) {
                 console.error("Error deleting user:", err);
-                alert('Failed to delete user.');
+                alert(`Failed to delete user: ${(err as Error).message}`);
             }
         }
     };
@@ -89,7 +89,7 @@ export const UserManagementPage = () => {
                                     </select>
                                 </td>
                                 <td>
-                                    <button className="delete-btn" onClick={() => handleDeleteUser(user.uid)}>
+                                    <button className="delete-btn" onClick={() => handleDeleteUser(user.uid, user.displayName)}>
                                         Delete
                                     </button>
                                 </td>

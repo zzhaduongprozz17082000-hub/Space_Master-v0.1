@@ -119,3 +119,83 @@ export const updateUserRole = functions.https.onCall(
       }
     },
 );
+
+export const deleteUser = functions.https.onCall(
+    async (request) => {
+        const data = request.data as { uid: string };
+        // 1. Check if the user is authenticated.
+        if (!request.auth) {
+            throw new functions.https.HttpsError(
+                "unauthenticated",
+                "The function must be called while authenticated.",
+            );
+        }
+
+        // 2. Check if the authenticated user is an admin.
+        const callerDoc = await admin
+            .firestore()
+            .collection("users")
+            .doc(request.auth.uid)
+            .get();
+        if (callerDoc.data()?.role !== "admin") {
+            throw new functions.https.HttpsError(
+                "permission-denied",
+                "You must be an admin to perform this action.",
+            );
+        }
+
+        // 3. Validate the input data.
+        if (!data.uid) {
+            throw new functions.https.HttpsError(
+                "invalid-argument",
+                "The function must be called with a valid 'uid'.",
+            );
+        }
+
+        const uidToDelete = data.uid;
+
+        try {
+            const db = admin.firestore();
+            const bucket = admin.storage().bucket();
+            const batch = db.batch();
+
+            // Find and delete all files and folders owned by the user from Firestore & Storage
+            const filesQuery = db.collection("files").where("ownerId", "==", uidToDelete);
+            const filesSnap = await filesQuery.get();
+            const storageDeletePromises: Promise<any>[] = [];
+
+            filesSnap.forEach((doc) => {
+                const fileData = doc.data();
+                if (fileData.storagePath) {
+                    storageDeletePromises.push(bucket.file(fileData.storagePath).delete());
+                }
+                batch.delete(doc.ref);
+            });
+
+            const foldersQuery = db.collection("folders").where("ownerId", "==", uidToDelete);
+            const foldersSnap = await foldersQuery.get();
+            foldersSnap.forEach((doc) => {
+                batch.delete(doc.ref);
+            });
+            
+            // Delete the user's document from the 'users' collection
+            const userRef = db.collection("users").doc(uidToDelete);
+            batch.delete(userRef);
+            
+            // Commit Firestore deletions
+            await batch.commit();
+
+            // Await storage deletions
+            await Promise.all(storageDeletePromises);
+
+            // Finally, delete the user from Firebase Authentication
+            await admin.auth().deleteUser(uidToDelete);
+
+            return { success: true, message: `Successfully deleted user ${uidToDelete} and all their data.` };
+        } catch (error) {
+            console.error(`Error deleting user ${uidToDelete}:`, error);
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
+            throw new functions.https.HttpsError("internal", `An error occurred while deleting the user: ${errorMessage}`);
+        }
+    },
+);
