@@ -4,6 +4,7 @@ import { UploadIcon, NewFolderIcon, FolderUploadIcon } from '../assets/icons';
 import { FileItem } from './FileItem';
 import { NewFolderModal } from './NewFolderModal';
 import { ShareModal } from './ShareModal';
+import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 import { Item, Folder, File } from '../types';
 
 
@@ -22,6 +23,9 @@ export const MainContent = ({ user, activeView, initialFolderId }: MainContentPr
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isShareModalOpen, setIsShareModalOpen] = useState(false);
     const [sharingItem, setSharingItem] = useState<Item | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [deletingItem, setDeletingItem] = useState<Item | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [ownedFolders, setOwnedFolders] = useState<Folder[]>([]);
     const [sharedFolders, setSharedFolders] = useState<Folder[]>([]);
     const [ownedFiles, setOwnedFiles] = useState<File[]>([]);
@@ -341,6 +345,67 @@ export const MainContent = ({ user, activeView, initialFolderId }: MainContentPr
         setSharingItem(item);
         setIsShareModalOpen(true);
     };
+    
+    const handleDeleteClick = (item: Item) => {
+        setDeletingItem(item);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deletingItem || !user) return;
+    
+        setIsDeleting(true);
+    
+        try {
+            const batch = firestore.batch();
+    
+            const deleteFolderRecursively = async (folderId: string) => {
+                // Get and delete files in folder
+                const filesQuery = firestore.collection('files').where('parentId', '==', folderId);
+                const filesInFolder = await filesQuery.get();
+                const fileStorageDeletionPromises: Promise<void>[] = [];
+    
+                filesInFolder.forEach(doc => {
+                    const fileData = doc.data() as File;
+                    if (fileData.storagePath) {
+                        fileStorageDeletionPromises.push(storage.ref(fileData.storagePath).delete());
+                    }
+                    batch.delete(doc.ref);
+                });
+                await Promise.all(fileStorageDeletionPromises);
+    
+                // Get sub-folders and delete them recursively
+                const subFoldersQuery = firestore.collection('folders').where('parentId', '==', folderId);
+                const subFolders = await subFoldersQuery.get();
+                for (const subFolderDoc of subFolders.docs) {
+                    await deleteFolderRecursively(subFolderDoc.id);
+                }
+    
+                // Finally, delete the current folder's document
+                batch.delete(firestore.collection('folders').doc(folderId));
+            };
+    
+            if (deletingItem.type === 'folder') {
+                await deleteFolderRecursively(deletingItem.id);
+            } else { // It's a file
+                const file = deletingItem as File;
+                if (file.storagePath) {
+                    await storage.ref(file.storagePath).delete();
+                }
+                batch.delete(firestore.collection('files').doc(file.id));
+            }
+    
+            await batch.commit();
+    
+        } catch (error) {
+            console.error("Error deleting item:", error);
+            alert("Failed to delete the item. Please try again.");
+        } finally {
+            setIsDeleting(false);
+            setIsDeleteModalOpen(false);
+            setDeletingItem(null);
+        }
+    };
 
     const currentFolderName = path[path.length - 1]?.name || (activeView === 'my-files' ? 'My Files' : 'Shared with me');
     const showActionButtons = activeView === 'my-files' || (activeView === 'shared-with-me' && currentFolderId !== null);
@@ -411,14 +476,17 @@ export const MainContent = ({ user, activeView, initialFolderId }: MainContentPr
             ) : (
                 <div className="file-grid">
                     {allItems.map((item) => {
+                        const isOwner = item.ownerId === user.uid;
                         if (item.type === 'folder') {
                             return (
                                 <FileItem
                                     key={item.id}
                                     type={item.type}
                                     name={item.name}
+                                    isOwner={isOwner}
                                     onClick={() => handleFolderClick(item)}
                                     onShareClick={() => handleShareClick(item)}
+                                    onDeleteClick={() => handleDeleteClick(item)}
                                 />
                             );
                         } else {
@@ -428,7 +496,9 @@ export const MainContent = ({ user, activeView, initialFolderId }: MainContentPr
                                     type={item.type}
                                     name={item.name}
                                     downloadURL={item.downloadURL}
+                                    isOwner={isOwner}
                                     onShareClick={() => handleShareClick(item)}
+                                    onDeleteClick={() => handleDeleteClick(item)}
                                 />
                             );
                         }
@@ -447,6 +517,16 @@ export const MainContent = ({ user, activeView, initialFolderId }: MainContentPr
                     isOpen={isShareModalOpen}
                     onClose={() => setIsShareModalOpen(false)}
                     item={sharingItem}
+                />
+            )}
+            {isDeleteModalOpen && deletingItem && (
+                <DeleteConfirmationModal
+                    isOpen={isDeleteModalOpen}
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    onConfirm={handleConfirmDelete}
+                    itemName={deletingItem.name}
+                    itemType={deletingItem.type}
+                    isDeleting={isDeleting}
                 />
             )}
         </main>

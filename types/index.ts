@@ -24,6 +24,7 @@ export interface File {
     type: 'file';
     createdAt: Timestamp;
     downloadURL: string;
+    storagePath?: string;
     parentId: string | null;
     ownerId: string;
     size?: number;

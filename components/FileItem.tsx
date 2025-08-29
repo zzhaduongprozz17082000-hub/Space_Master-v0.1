@@ -1,15 +1,17 @@
 import React from 'react';
-import { FolderIcon, FileIcon, ShareIcon } from '../assets/icons';
+import { FolderIcon, FileIcon, ShareIcon, DeleteIcon } from '../assets/icons';
 
 interface FileItemProps {
   type: 'folder' | 'file';
   name: string;
   downloadURL?: string;
+  isOwner: boolean;
   onClick?: () => void;
   onShareClick: () => void;
+  onDeleteClick: () => void;
 }
 
-export const FileItem = ({ type, name, downloadURL, onClick, onShareClick }: FileItemProps) => {
+export const FileItem = ({ type, name, downloadURL, isOwner, onClick, onShareClick, onDeleteClick }: FileItemProps) => {
   const icon = type === 'folder' ? <FolderIcon /> : <FileIcon />;
 
   const handleShareClick = (e: React.MouseEvent) => {
@@ -17,9 +19,20 @@ export const FileItem = ({ type, name, downloadURL, onClick, onShareClick }: Fil
     e.stopPropagation(); // Prevent folder navigation
     onShareClick();
   };
+  
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDeleteClick();
+  };
 
   const content = (
     <div className="file-item-wrapper">
+       {isOwner && (
+         <button className="delete-btn" onClick={handleDeleteClick} title={`Delete ${name}`}>
+           <DeleteIcon />
+         </button>
+       )}
        <button className="share-btn" onClick={handleShareClick} title={`Share ${name}`}>
          <ShareIcon />
        </button>

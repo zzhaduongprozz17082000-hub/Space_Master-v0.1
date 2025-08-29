@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { firestore } from '../../firebase/config';
+import { firestore, functions } from '../../firebase/config';
 import { User } from '../../types';
 
 export const UserManagementPage = () => {
@@ -26,10 +26,11 @@ export const UserManagementPage = () => {
 
     const handleRoleChange = async (uid: string, newRole: 'admin' | 'user') => {
         try {
-            await firestore.collection('users').doc(uid).update({ role: newRole });
+            const updateUserRole = functions.httpsCallable('updateUserRole');
+            await updateUserRole({ uid: uid, role: newRole });
         } catch (err) {
             console.error("Error updating role:", err);
-            alert('Failed to update user role.');
+            alert('Failed to update user role. Check console for details.');
         }
     };
 
