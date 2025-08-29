@@ -880,6 +880,14 @@ a.file-item-link:visited {
 }
 
 .user-table .delete-btn {
+    /* Reset/override styles from generic .delete-btn for file items */
+    position: static;
+    opacity: 1;
+    width: auto;
+    height: auto;
+    display: inline-block;
+    
+    /* Specific styles for this button */
     background: transparent;
     border: 1px solid var(--danger-color);
     color: var(--danger-color);
