@@ -1,5 +1,5 @@
 import React from 'react';
-import { auth, GoogleAuthProvider } from '../firebase/config';
+import { auth, firestore, GoogleAuthProvider } from '../firebase/config';
 import { RocketIcon, GoogleIcon } from '../assets/icons';
 
 export const LoginPage = () => {
@@ -7,7 +7,28 @@ export const LoginPage = () => {
     const handleGoogleSignIn = async () => {
         const provider = new GoogleAuthProvider();
         try {
-            await auth.signInWithRedirect(provider);
+            const result = await auth.signInWithPopup(provider);
+            if (result.user) {
+                const userRef = firestore.collection('users').doc(result.user.uid);
+                const doc = await userRef.get();
+
+                if (!doc.exists) {
+                    // New user, create document with default role
+                    await userRef.set({
+                        uid: result.user.uid,
+                        email: result.user.email,
+                        displayName: result.user.displayName,
+                        photoURL: result.user.photoURL,
+                        role: 'user' // Default role
+                    });
+                } else {
+                    // Existing user, just update their profile info
+                    await userRef.update({
+                        displayName: result.user.displayName,
+                        photoURL: result.user.photoURL,
+                    });
+                }
+            }
         } catch (error) {
             console.error("Authentication error: ", error);
         }

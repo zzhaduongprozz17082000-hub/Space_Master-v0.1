@@ -12,59 +12,22 @@ export const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let unsubscribe: () => void;
-
-    const processAuth = async () => {
-        try {
-            const result = await auth.getRedirectResult();
-            if (result && result.user) {
-                const userRef = firestore.collection('users').doc(result.user.uid);
-                const doc = await userRef.get();
-
-                if (!doc.exists) {
-                    // New user, create document with default role
-                    await userRef.set({
-                        uid: result.user.uid,
-                        email: result.user.email,
-                        displayName: result.user.displayName,
-                        photoURL: result.user.photoURL,
-                        role: 'user' // Default role
-                    });
-                } else {
-                    // Existing user, just update their profile info
-                    await userRef.update({
-                        displayName: result.user.displayName,
-                        photoURL: result.user.photoURL,
-                    });
-                }
-            }
-        } catch (error) {
-            console.error("Error processing redirect result: ", error);
+    const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
+      setUserAuth(currentUser);
+      if (currentUser) {
+        // Fetch user profile from Firestore to get the role
+        const userRef = firestore.collection('users').doc(currentUser.uid);
+        const doc = await userRef.get();
+        if (doc.exists) {
+          setUserProfile(doc.data() as User);
         }
+      } else {
+        setUserProfile(null);
+      }
+      setLoading(false);
+    });
 
-        unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
-          setUserAuth(currentUser);
-          if (currentUser) {
-            // Fetch user profile from Firestore to get the role
-            const userRef = firestore.collection('users').doc(currentUser.uid);
-            const doc = await userRef.get();
-            if (doc.exists) {
-              setUserProfile(doc.data() as User);
-            }
-          } else {
-            setUserProfile(null);
-          }
-          setLoading(false);
-        });
-    };
-
-    processAuth();
-
-    return () => {
-        if (unsubscribe) {
-            unsubscribe();
-        }
-    };
+    return () => unsubscribe();
   }, []);
 
   if (loading) {
