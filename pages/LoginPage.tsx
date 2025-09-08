@@ -70,13 +70,16 @@ export const LoginPage = () => {
                 if (user) {
                     await user.updateProfile({ displayName });
                     const userRef = firestore.collection('users').doc(user.uid);
-                    await userRef.set({
+                    const profile = await userRef.set({
                         uid: user.uid,
                         email: user.email,
                         displayName: displayName,
                         photoURL: user.photoURL, // will be null initially
                         role: 'user'
                     });
+
+                    //
+                    location.href = "/";
                 }
             } catch (error: any) {
                 setError(error.message);
