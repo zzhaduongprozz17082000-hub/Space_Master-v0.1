@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { auth, firestore, GoogleAuthProvider } from '../firebase/config';
 import { RocketIcon, GoogleIcon } from '../assets/icons';
 
@@ -15,49 +15,37 @@ export const LoginPage = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        const processRedirectResult = async () => {
-            try {
-                const result = await auth.getRedirectResult();
-                if (result && result.user) {
-                    setLoading(true); // Show loading state while we process
-                    const userRef = firestore.collection('users').doc(result.user.uid);
-                    const doc = await userRef.get();
-
-                    if (!doc.exists) {
-                        await userRef.set({
-                            uid: result.user.uid,
-                            email: result.user.email,
-                            displayName: result.user.displayName,
-                            photoURL: result.user.photoURL,
-                            role: 'user'
-                        });
-                    } else {
-                        await userRef.update({
-                            displayName: result.user.displayName,
-                            photoURL: result.user.photoURL,
-                        });
-                    }
-                    // onAuthStateChanged in App.tsx will now handle navigation
-                }
-            } catch (error: any) {
-                setError(error.message);
-                setLoading(false); // Make sure to turn off loading on error
-            }
-        };
-
-        processRedirectResult();
-    }, []);
-
     const handleGoogleSignIn = async () => {
         const provider = new GoogleAuthProvider();
         setError('');
         setLoading(true);
         try {
-            await auth.signInWithRedirect(provider);
+            const result = await auth.signInWithPopup(provider);
+            if (result.user) {
+                const userRef = firestore.collection('users').doc(result.user.uid);
+                const doc = await userRef.get();
+
+                if (!doc.exists) {
+                    await userRef.set({
+                        uid: result.user.uid,
+                        email: result.user.email,
+                        displayName: result.user.displayName,
+                        photoURL: result.user.photoURL,
+                        role: 'user'
+                    });
+                } else {
+                    await userRef.update({
+                        displayName: result.user.displayName,
+                        photoURL: result.user.photoURL,
+                    });
+                }
+                window.location.replace("/");
+            }
         } catch (error: any) {
             setError(error.message);
+        } finally {
             setLoading(false);
+            window.location.replace("/");
         }
     };
 
@@ -84,7 +72,7 @@ export const LoginPage = () => {
                 if (user) {
                     await user.updateProfile({ displayName });
                     const userRef = firestore.collection('users').doc(user.uid);
-                    await userRef.set({
+                    const profile = await userRef.set({
                         uid: user.uid,
                         email: user.email,
                         displayName: displayName,
